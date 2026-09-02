@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: comedero-monitor
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: ESP32_API_KEY
+        generateValue: true
