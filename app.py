@@ -76,37 +76,175 @@ HTML = r"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Monitoreo de alimentación</title>
+
 <style>
-:root{--bg:#f3f5f7;--card:#fff;--text:#1f2937;--muted:#6b7280;--border:#e5e7eb;--accent:#2563eb}
+:root{
+  --bg:#f3f5f7;
+  --card:#ffffff;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --accent:#2563eb;
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-header{background:white;border-bottom:1px solid var(--border);padding:18px 24px;display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
-h1{font-size:22px;margin:0}
-main{max-width:1200px;margin:auto;padding:22px}
-.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-select,button{font:inherit}
-select{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:white}
-.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0}
-.card,.panel{background:white;border:1px solid var(--border);border-radius:16px;padding:18px}
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+body{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+header{
+  width:100%;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+h1{font-size:22px;line-height:1.2;margin:0}
+main{width:100%;max-width:1200px;margin:0 auto;padding:16px}
+.toolbar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
+  min-width:0;
+}
+select,button{font:inherit;font-size:16px;max-width:100%}
+select{
+  min-height:44px;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+}
+.cards{
+  width:100%;
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin:16px 0;
+}
+.card,.panel{
+  min-width:0;
+  width:100%;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px;
+}
 .label{font-size:13px;color:var(--muted);margin-bottom:8px}
-.value{font-size:30px;font-weight:750}
-.small{font-size:15px}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#9ca3af;margin-right:6px}
-.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-.panel-head h2{font-size:18px;margin:0}
+.value{font-size:30px;line-height:1.15;font-weight:750;word-break:break-word}
+.small{font-size:14px}
+.dot{
+  display:inline-block;
+  width:10px;height:10px;
+  border-radius:50%;
+  background:#9ca3af;
+  margin-right:6px;
+}
+.panel-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.panel-head h2{font-size:18px;line-height:1.3;margin:0}
 .ranges{display:flex;gap:6px;flex-wrap:wrap}
-.range,.action{border:1px solid var(--border);background:white;border-radius:9px;padding:9px 12px;cursor:pointer;min-height:42px}
-.range.active{background:#1f2937;color:white;border-color:#1f2937}
-.action.primary{background:var(--accent);color:white;border-color:var(--accent)}
-.chart-wrap{position:relative;height:440px;border-top:1px solid var(--border);padding-top:12px}
-canvas{width:100%;height:100%;display:block}
-.tip{position:absolute;display:none;pointer-events:none;background:#111827;color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;white-space:nowrap;transform:translate(-50%,-115%)}
-.actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:14px}
+.range,.action{
+  border:1px solid var(--border);
+  background:#fff;
+  border-radius:9px;
+  padding:9px 12px;
+  cursor:pointer;
+  min-height:44px;
+  touch-action:manipulation;
+}
+.range.active{background:#1f2937;color:#fff;border-color:#1f2937}
+.action.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chart-wrap{
+  position:relative;
+  width:100%;
+  min-width:0;
+  height:420px;
+  border-top:1px solid var(--border);
+  padding-top:12px;
+  overflow:hidden;
+}
+canvas{
+  display:block;
+  width:100%!important;
+  max-width:100%;
+  height:100%!important;
+  touch-action:pan-y;
+}
+.tip{
+  position:absolute;
+  display:none;
+  pointer-events:none;
+  background:#111827;
+  color:#fff;
+  padding:8px 10px;
+  border-radius:8px;
+  font-size:12px;
+  white-space:nowrap;
+  transform:translate(-50%,-115%);
+}
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
 .empty{color:var(--muted);font-size:14px}
-.cloud{font-size:12px;color:var(--muted)}
-@media(max-width:850px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){main{padding:14px}.cards{grid-template-columns:1fr}.chart-wrap{height:330px}header{padding:14px}}
+.cloud{font-size:12px;color:var(--muted);margin-top:4px}
+
+@media(max-width:850px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chart-wrap{height:360px}
+}
+
+@media(max-width:600px){
+  header{padding:12px;align-items:stretch}
+  header>div{min-width:0}
+  h1{font-size:20px}
+  .toolbar{width:100%;display:grid;grid-template-columns:1fr}
+  .toolbar label{font-size:13px;color:var(--muted)}
+  .toolbar select,.toolbar button{width:100%}
+  main{padding:10px}
+  .cards{grid-template-columns:1fr;gap:10px;margin:10px 0}
+  .card,.panel{padding:14px;border-radius:13px}
+  .value{font-size:28px}
+  .panel-head{align-items:stretch}
+  .ranges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+  .range{width:100%;padding:8px 5px}
+  .chart-wrap{height:310px}
+  .actions{display:grid;grid-template-columns:1fr}
+  .actions .action{width:100%}
+}
+
+@media(max-width:360px){
+  h1{font-size:18px}
+  .ranges{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .value{font-size:25px}
+  .chart-wrap{height:280px}
+}
 </style>
+
 </head>
 <body>
 <header>
@@ -225,9 +363,12 @@ async function updateChart(){
 async function updateAll(){await Promise.all([updateCurrent(),updateStats(),updateChart()]);}
 
 function resize(){
-  const dpr=window.devicePixelRatio||1,r=canvas.getBoundingClientRect();
-  canvas.width=Math.max(1,Math.round(r.width*dpr));
-  canvas.height=Math.max(1,Math.round(r.height*dpr));
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const r=canvas.getBoundingClientRect();
+  const cssW=Math.max(280,Math.floor(r.width||canvas.parentElement.clientWidth||320));
+  const cssH=Math.max(240,Math.floor(r.height||310));
+  canvas.width=Math.round(cssW*dpr);
+  canvas.height=Math.round(cssH*dpr);
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 
@@ -287,6 +428,10 @@ document.getElementById('refresh').addEventListener('click',updateAll);
 document.getElementById('excelRange').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala='+scale;});
 document.getElementById('excelAll').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo;'});
 window.addEventListener('resize',()=>draw(points));
+window.addEventListener('orientationchange',()=>setTimeout(()=>draw(points),250));
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',()=>draw(points));
+}
 setInterval(()=>{if(selected){updateCurrent();updateStats();updateChart();}else loadPets();},10000);
 loadPets().catch(console.error);
 })();
@@ -504,3 +649,4 @@ def excel(pet_id):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
