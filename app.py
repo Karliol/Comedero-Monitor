@@ -45,6 +45,13 @@ class Medicion(Base):
     fecha_hora = Column(DateTime, nullable=False, index=True)
     peso = Column(Float, nullable=False)
 
+class ReinicioSesion(Base):
+    __tablename__ = "reinicios_sesion"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mascota_id = Column(String(60), nullable=False, unique=True, index=True)
+    fecha_hora = Column(DateTime, nullable=False)
+
 Base.metadata.create_all(engine)
 
 app = Flask(__name__)
@@ -66,6 +73,26 @@ def start_for_scale(scale):
 
 def fmt_dt(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+def get_reset_time(pet_id):
+    with SessionLocal() as db:
+        r = db.execute(
+            select(ReinicioSesion)
+            .where(ReinicioSesion.mascota_id == pet_id)
+            .limit(1)
+        ).scalar_one_or_none()
+    return r.fecha_hora if r else None
+
+def visible_start(pet_id, scale=None, today_only=False):
+    starts = []
+    if scale:
+        starts.append(start_for_scale(scale))
+    if today_only:
+        starts.append(now_lima().replace(hour=0, minute=0, second=0, microsecond=0))
+    reset_time = get_reset_time(pet_id)
+    if reset_time:
+        starts.append(reset_time)
+    return max(starts) if starts else reset_time
 
 def valid_api_key():
     return request.headers.get("X-API-Key", "") == API_KEY
@@ -175,6 +202,8 @@ select{
 }
 .range.active{background:#1f2937;color:#fff;border-color:#1f2937}
 .action.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.action.danger{background:#fff;color:#b42318;border-color:#f1b4ae}
+.action.danger:hover{background:#fff4f2}
 .chart-wrap{
   position:relative;
   width:100%;
@@ -256,6 +285,7 @@ canvas{
 <label for="pet">Mascota</label>
 <select id="pet"><option value="">Esperando datos...</option></select>
 <button id="refresh" class="action">Actualizar</button>
+<button id="resetData" class="action danger">Reiniciar toma de datos</button>
 </div>
 </header>
 
@@ -306,6 +336,7 @@ const canvas=document.getElementById('chart');
 const ctx=canvas.getContext('2d');
 const tip=document.getElementById('tip');
 const empty=document.getElementById('empty');
+const resetData=document.getElementById('resetData');
 
 let selected='',scale='24h',points=[];
 
@@ -391,13 +422,7 @@ function draw(data){
   if(t0===t1){t0-=30000;t1+=30000;}
   const X=t=>p.l+((t.getTime()-t0)/(t1-t0))*pw;
   const Y=v=>p.t+ph-(Math.max(0,Math.min(1000,v))/1000)*ph;
-  for(let i=0;i<=6;i++){
-    const d=new Date(t0+(t1-t0)*(i/6)),x=p.l+pw*(i/6);
-    const lab=(scale==='3d'||scale==='7d')
-      ?d.toLocaleString([],{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})
-      :d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    ctx.fillStyle='#6b7280';ctx.textAlign='center';ctx.fillText(lab,x,H-p.b+9);
-  }
+  // El eje X no muestra horas; solo conserva la etiqueta 'Tiempo'.
   ctx.strokeStyle='#2563eb';ctx.lineWidth=2;ctx.beginPath();
   data.forEach((q,i)=>{const x=X(q.t),y=Y(q.y);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
   ctx.stroke();
@@ -415,9 +440,31 @@ canvas.addEventListener('mousemove',ev=>{
   points.forEach(q=>{const x=G.X(q.t),d=Math.abs(x-mx);if(d<bd){bd=d;best={q,x,y:G.Y(q.y)};}});
   if(!best||bd>30){tip.style.display='none';return;}
   tip.style.display='block';tip.style.left=best.x+'px';tip.style.top=best.y+'px';
-  tip.textContent=best.q.raw+' · '+best.q.y.toFixed(1)+' g';
+  const hora=best.q.t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  tip.textContent=hora+' · '+best.q.y.toFixed(1)+' g';
 });
 canvas.addEventListener('mouseleave',()=>tip.style.display='none');
+
+function showNearestPoint(clientX){
+  if(!points.length||!canvas._geom){tip.style.display='none';return;}
+  const r=canvas.getBoundingClientRect(),mx=clientX-r.left,G=canvas._geom;
+  let best=null,bd=Infinity;
+  points.forEach(q=>{
+    const x=G.X(q.t),d=Math.abs(x-mx);
+    if(d<bd){bd=d;best={q,x,y:G.Y(q.y)};}
+  });
+  if(!best){tip.style.display='none';return;}
+  const hora=best.q.t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  tip.style.display='block';
+  tip.style.left=best.x+'px';
+  tip.style.top=best.y+'px';
+  tip.textContent=hora+' · '+best.q.y.toFixed(1)+' g';
+}
+
+canvas.addEventListener('click',ev=>showNearestPoint(ev.clientX));
+canvas.addEventListener('touchstart',ev=>{
+  if(ev.touches&&ev.touches.length) showNearestPoint(ev.touches[0].clientX);
+},{passive:true});
 
 pet.addEventListener('change',()=>{selected=pet.value;updateAll();});
 document.querySelectorAll('.range').forEach(b=>b.addEventListener('click',()=>{
@@ -425,6 +472,36 @@ document.querySelectorAll('.range').forEach(b=>b.addEventListener('click',()=>{
   b.classList.add('active');scale=b.dataset.range;updateChart();
 }));
 document.getElementById('refresh').addEventListener('click',updateAll);
+
+resetData.addEventListener('click',async()=>{
+  if(!selected)return;
+  const nombre=pet.options[pet.selectedIndex]?.textContent||'esta mascota';
+  const ok=confirm(
+    '¿Reiniciar la toma de datos de '+nombre+'?\n\n'+
+    'La gráfica y los cálculos visibles comenzarán desde cero. '+
+    'Los registros históricos NO se eliminarán de la base de datos.'
+  );
+  if(!ok)return;
+
+  resetData.disabled=true;
+  resetData.textContent='Reiniciando...';
+  try{
+    const r=await fetch('/api/reiniciar/'+encodeURIComponent(selected),{method:'POST'});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    today.textContent='0.0 g';
+    lastc.textContent='0.0 g';
+    points=[];
+    draw([]);
+    await updateAll();
+    alert('Toma de datos reiniciada correctamente.');
+  }catch(e){
+    alert('No se pudo reiniciar la toma de datos.');
+  }finally{
+    resetData.disabled=false;
+    resetData.textContent='Reiniciar toma de datos';
+  }
+});
+
 document.getElementById('excelRange').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala='+scale;});
 document.getElementById('excelAll').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo;'});
 window.addEventListener('resize',()=>draw(points));
@@ -521,28 +598,35 @@ def latest(pet_id):
 @app.get("/api/historico/<pet_id>")
 def history(pet_id):
     scale = request.args.get("escala", "24h")
-    start = start_for_scale(scale)
+    start = visible_start(pet_id, scale=scale)
 
     with SessionLocal() as db:
-        rows = db.execute(
-            select(Medicion)
-            .where(
-                Medicion.mascota_id == pet_id,
-                Medicion.fecha_hora >= start
-            )
-            .order_by(Medicion.fecha_hora.asc())
-        ).scalars().all()
+        stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
+        if start:
+            stmt = stmt.where(Medicion.fecha_hora >= start)
+        rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
-    if len(rows) > 1200:
-        step = max(1, len(rows)//1200)
-        sampled = rows[::step]
-        if sampled[-1].id != rows[-1].id:
-            sampled.append(rows[-1])
-        rows = sampled
+    changed = []
+    last_weight = None
+    for r in rows:
+        w = float(r.peso)
+        if last_weight is None or abs(w - last_weight) >= 0.5:
+            changed.append(r)
+            last_weight = w
+
+    if rows and not changed:
+        changed = [rows[-1]]
+
+    if len(changed) > 1200:
+        step = max(1, len(changed)//1200)
+        sampled = changed[::step]
+        if sampled[-1].id != changed[-1].id:
+            sampled.append(changed[-1])
+        changed = sampled
 
     return jsonify(
-        fechas=[fmt_dt(r.fecha_hora) for r in rows],
-        pesos=[r.peso for r in rows]
+        fechas=[fmt_dt(r.fecha_hora) for r in changed],
+        pesos=[r.peso for r in changed]
     )
 
 def calc_consumption(rows, threshold=2.0):
@@ -565,20 +649,33 @@ def calc_consumption(rows, threshold=2.0):
 
 @app.get("/api/estadisticas/<pet_id>")
 def stats(pet_id):
-    start = now_lima().replace(hour=0, minute=0, second=0, microsecond=0)
+    start = visible_start(pet_id, today_only=True)
 
     with SessionLocal() as db:
-        rows = db.execute(
-            select(Medicion)
-            .where(
-                Medicion.mascota_id == pet_id,
-                Medicion.fecha_hora >= start
-            )
-            .order_by(Medicion.fecha_hora.asc())
-        ).scalars().all()
+        stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
+        if start:
+            stmt = stmt.where(Medicion.fecha_hora >= start)
+        rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
     total, last = calc_consumption(rows)
     return jsonify(consumo_hoy=total, ultimo_consumo=last)
+
+@app.post("/api/reiniciar/<pet_id>")
+def reset_session(pet_id):
+    timestamp = now_lima()
+    with SessionLocal() as db:
+        r = db.execute(
+            select(ReinicioSesion)
+            .where(ReinicioSesion.mascota_id == pet_id)
+            .limit(1)
+        ).scalar_one_or_none()
+        if r:
+            r.fecha_hora = timestamp
+        else:
+            db.add(ReinicioSesion(mascota_id=pet_id, fecha_hora=timestamp))
+        db.commit()
+
+    return jsonify(estado="ok", mensaje="Toma de datos reiniciada", fecha_hora=fmt_dt(timestamp))
 
 @app.get("/api/excel/<pet_id>")
 def excel(pet_id):
@@ -587,10 +684,10 @@ def excel(pet_id):
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
         if scale != "todo":
-            stmt = stmt.where(Medicion.fecha_hora >= start_for_scale(scale))
-        rows = db.execute(
-            stmt.order_by(Medicion.fecha_hora.asc())
-        ).scalars().all()
+            start = visible_start(pet_id, scale=scale)
+            if start:
+                stmt = stmt.where(Medicion.fecha_hora >= start)
+        rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
     if not rows:
         return Response("No hay datos para exportar.", status=404, mimetype="text/plain")
@@ -649,4 +746,3 @@ def excel(pet_id):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
