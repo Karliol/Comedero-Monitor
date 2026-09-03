@@ -204,6 +204,8 @@ select{
 .action.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 .action.danger{background:#fff;color:#b42318;border-color:#f1b4ae}
 .action.danger:hover{background:#fff4f2}
+.action.delete{background:#b42318;color:#fff;border-color:#b42318}
+.action.delete:hover{background:#8f1d14}
 .chart-wrap{
   position:relative;
   width:100%;
@@ -286,6 +288,7 @@ canvas{
 <select id="pet"><option value="">Esperando datos...</option></select>
 <button id="refresh" class="action">Actualizar</button>
 <button id="resetData" class="action danger">Reiniciar toma de datos</button>
+<button id="deleteAll" class="action delete">Eliminar historial completo</button>
 </div>
 </header>
 
@@ -337,6 +340,7 @@ const ctx=canvas.getContext('2d');
 const tip=document.getElementById('tip');
 const empty=document.getElementById('empty');
 const resetData=document.getElementById('resetData');
+const deleteAll=document.getElementById('deleteAll');
 
 let selected='',scale='24h',points=[];
 
@@ -502,6 +506,49 @@ resetData.addEventListener('click',async()=>{
   }
 });
 
+
+deleteAll.addEventListener('click',async()=>{
+  if(!selected)return;
+
+  const nombre=pet.options[pet.selectedIndex]?.textContent||'esta mascota';
+
+  const ok=confirm(
+    '¿Estás seguro de eliminar todo el registro?\n\n'+
+    'Se eliminará permanentemente TODO el historial de '+nombre+'. '+
+    'Esta acción no se puede deshacer.'
+  );
+
+  if(!ok)return;
+
+  deleteAll.disabled=true;
+  deleteAll.textContent='Eliminando...';
+
+  try{
+    const r=await fetch('/api/eliminar_historial/'+encodeURIComponent(selected),{
+      method:'DELETE'
+    });
+
+    if(!r.ok)throw new Error('HTTP '+r.status);
+
+    weight.textContent='-- g';
+    today.textContent='0.0 g';
+    lastc.textContent='0.0 g';
+    lastt.textContent='--';
+    status.textContent='Sin datos';
+    points=[];
+    draw([]);
+
+    await loadPets();
+
+    alert('Todo el historial fue eliminado correctamente.');
+  }catch(e){
+    alert('No se pudo eliminar el historial.');
+  }finally{
+    deleteAll.disabled=false;
+    deleteAll.textContent='Eliminar historial completo';
+  }
+});
+
 document.getElementById('excelRange').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala='+scale;});
 document.getElementById('excelAll').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo;'});
 window.addEventListener('resize',()=>draw(points));
@@ -659,6 +706,24 @@ def stats(pet_id):
 
     total, last = calc_consumption(rows)
     return jsonify(consumo_hoy=total, ultimo_consumo=last)
+
+@app.delete("/api/eliminar_historial/<pet_id>")
+def delete_history(pet_id):
+    with SessionLocal() as db:
+        db.query(Medicion).filter(
+            Medicion.mascota_id == pet_id
+        ).delete(synchronize_session=False)
+
+        db.query(ReinicioSesion).filter(
+            ReinicioSesion.mascota_id == pet_id
+        ).delete(synchronize_session=False)
+
+        db.commit()
+
+    return jsonify(
+        estado="ok",
+        mensaje="Historial eliminado completamente"
+    )
 
 @app.post("/api/reiniciar/<pet_id>")
 def reset_session(pet_id):
