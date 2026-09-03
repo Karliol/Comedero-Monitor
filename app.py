@@ -73,6 +73,33 @@ def start_for_scale(scale):
 def fmt_dt(dt):
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
+def parse_client_datetime(value):
+    """
+    Convierte la fecha enviada por el ESP32 a hora de Perú.
+    Si el ESP32 no envía una fecha válida, usa la hora de recepción.
+    """
+    if not value:
+        return now_lima()
+
+    try:
+        text = str(value).strip()
+
+        # Permite formato ISO con Z.
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+
+        dt = datetime.fromisoformat(text)
+
+        # Si viene con zona horaria, convertir a America/Lima y
+        # guardar como datetime sin tzinfo, igual que el resto de la BD.
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(APP_TZ).replace(tzinfo=None)
+
+        return dt
+
+    except (ValueError, TypeError):
+        return now_lima()
+
 def get_reset_time(pet_id):
     with SessionLocal() as db:
         r = db.execute(
