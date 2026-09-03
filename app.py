@@ -1,4 +1,4 @@
-import os
+ import os
 from datetime import datetime, timedelta
 from io import BytesIO
 from zoneinfo import ZoneInfo
@@ -571,7 +571,16 @@ function clampView(){
   const padX=(bx.x1-bx.x0)*0.5;
   if(view.x1<bx.x0-padX){const d=(bx.x0-padX)-view.x1;view.x0+=d;view.x1+=d;}
   if(view.x0>bx.x1+padX){const d=view.x0-(bx.x1+padX);view.x0-=d;view.x1-=d;}
-  if(view.y1<0){const d=-view.y1;view.y0+=d;view.y1+=d;}
+  // El peso físico no puede ser negativo. El eje vertical se limita
+  // estrictamente a Y >= 0 incluso al hacer zoom o arrastrar.
+  if(view.y0 < 0){
+    const spanY = Math.max(minYSpan, view.y1 - view.y0);
+    view.y0 = 0;
+    view.y1 = spanY;
+  }
+  if(view.y1 <= view.y0){
+    view.y1 = view.y0 + minYSpan;
+  }
 }
 
 function zoomAt(factor,cx,cy){
