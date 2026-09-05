@@ -582,7 +582,7 @@ async function loadPets(){
         clave=prompt("Ingrese clave de 4 dígitos:");
         if(clave===null)return;
 
-        if(!/^\\d{4}$/.test(clave.trim())){
+        if(!/^\d{4}$/.test(clave.trim())){
           alert("Ingrese una clave válida de 4 dígitos");
           return;
         }
@@ -1087,7 +1087,7 @@ if(deleteHistory){
 if(changeKey){
  changeKey.onclick=()=>{
    const nueva=prompt('Ingrese la nueva clave de 4 dígitos:');
-   if(nueva && /^\\d{4}$/.test(nueva)){
+   if(nueva && /^\d{4}$/.test(nueva)){
      alert('Clave actualizada correctamente.');
    }else if(nueva!==null){
      alert('La clave debe tener 4 dígitos.');
