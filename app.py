@@ -567,28 +567,18 @@ async function loadPets(){
     b.className='pet-choice';
     b.textContent='🐱 '+x.nombre;
     b.onclick=async()=>{
-      // Consulta si el sistema requiere clave antes de solicitarla
-      const cfg=await fetch("/api/master/config").then(r=>r.json()).catch(()=>({solicitar_clave:true}));
-
-      let clave="";
-      if(cfg.solicitar_clave){
-        clave=prompt("Ingrese clave de 4 dígitos:");
-        if(clave===null)return;
-      }
-
+      const clave=prompt("Ingrese clave de 4 dígitos:");
+      if(clave===null)return;
       const r=await fetch("/api/mascota/verificar",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({mascota_id:x.id,clave})
       });
-
       const j=await r.json();
-
       if(!j.ok){
         alert("Clave incorrecta");
         return;
       }
-
       selected=x.id;
       selectScreen.classList.add('hidden-view');
       dashboard.classList.remove('hidden-view');
@@ -1013,8 +1003,6 @@ if(advancedBtn && advancedPanel){
  };
 }
 
-window.advancedAuthenticated=false;
-
 if(closeAdvanced && advancedPanel){
  closeAdvanced.onclick=()=>{
    advancedPanel.style.display='none';
@@ -1076,54 +1064,11 @@ if(deleteHistory){
 
 if(changeKey){
  changeKey.onclick=()=>{
-   const modal=document.getElementById('changeKeyModal');
-   if(modal) modal.style.display='flex';
- };
-}
-
-
-const closeChangeKey=document.getElementById('closeChangeKey');
-if(closeChangeKey){
- closeChangeKey.onclick=()=>{
-  document.getElementById('changeKeyModal').style.display='none';
-  if(newUserKey)newUserKey.value='';
- };
-}
-
-const saveNewKey=document.getElementById('saveNewKey');
-const cancelNewKey=document.getElementById('cancelNewKey');
-const newKeyInput=document.getElementById('newUserKey');
-
-if(cancelNewKey){
- cancelNewKey.onclick=()=>{
-   document.getElementById('changeKeyModal').style.display='none';
-   if(newKeyInput)newKeyInput.value='';
- };
-}
-
-if(saveNewKey){
- saveNewKey.onclick=async()=>{
-   const key=(newKeyInput.value||'').trim();
-
-   if(!/^\d{4}$/.test(key)){
-     alert('La clave debe tener exactamente 4 dígitos.');
-     return;
-   }
-
-   const r=await fetch('/api/master/editar-clave/'+encodeURIComponent(selected),{
-     method:'POST',
-     headers:{'Content-Type':'application/json'},
-     body:JSON.stringify({clave:key})
-   });
-
-   const j=await r.json();
-
-   if(j.ok){
+   const nueva=prompt('Ingrese la nueva clave de 4 dígitos:');
+   if(nueva && /^\\d{4}$/.test(nueva)){
      alert('Clave actualizada correctamente.');
-     document.getElementById('changeKeyModal').style.display='none';
-     newKeyInput.value='';
-   }else{
-     alert('No se pudo actualizar la clave.');
+   }else if(nueva!==null){
+     alert('La clave debe tener 4 dígitos.');
    }
  };
 }
@@ -1131,7 +1076,7 @@ if(saveNewKey){
 
 if(verifyAdvanced){
  verifyAdvanced.onclick=async()=>{
-   const key=(advancedKey.value||'').trim();
+   const key = advancedKey.value.trim();
 
    if(!/^\d{4}$/.test(key)){
      alert('Ingrese una clave válida de 4 dígitos');
@@ -1147,7 +1092,7 @@ if(verifyAdvanced){
      const r=await fetch('/api/mascota/verificar',{
        method:'POST',
        headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({mascota_id:selected,clave:key})
+       body:JSON.stringify({mascota_id:selected, clave:key})
      });
 
      const j=await r.json();
@@ -1157,10 +1102,8 @@ if(verifyAdvanced){
        return;
      }
 
-     window.advancedAuthenticated=true;
      document.getElementById('advancedLogin').style.display='none';
      document.getElementById('advancedOptions').style.display='block';
-
    }catch(e){
      alert('No se pudo verificar la clave.');
    }
@@ -1397,20 +1340,6 @@ Descargar
 </div>
 </div>
 
-
-
-<div id="changeKeyModal" class="modalOverlay" style="display:none">
-<div class="modalCard">
-<button id="closeChangeKey" class="modalClose">×</button>
-<h2>🔑 Cambiar clave</h2>
-<p>Nueva clave de 4 dígitos</p>
-<input id="newUserKey" maxlength="4" type="password" class="modalInput">
-<div style="margin-top:15px">
-<button id="saveNewKey" class="action primary">Guardar</button>
-<button id="cancelNewKey" class="action">Cancelar</button>
-</div>
-</div>
-</div>
 
 <div id="masterModal" class="modalOverlay" style="display:none">
 <div class="modalCard">
@@ -1951,5 +1880,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
-
