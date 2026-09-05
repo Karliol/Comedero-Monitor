@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
-from flask import Flask, request, jsonify, send_file, Response\nimport hashlib
+from flask import Flask, request, jsonify, send_file, Response
+import hashlib
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
