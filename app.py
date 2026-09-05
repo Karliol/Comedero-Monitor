@@ -1,5 +1,4 @@
 
-
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -852,9 +851,7 @@ if(deleteAll) deleteAll.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
-    '¿Estás seguro de eliminar todo el registro?
-
-'+
+    '¿Estás seguro de eliminar todo el registro?\n\n'+
     'Se eliminará permanentemente TODO el historial de '+nombre+'. '+
     'Esta acción no se puede deshacer.'
   );
