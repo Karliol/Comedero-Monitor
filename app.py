@@ -958,67 +958,71 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 
-// ===== V2.2.7 EXCEL FIX =====
-document.addEventListener("DOMContentLoaded", function(){
+// ===== V2.2.8 EXCEL FINAL =====
+(function(){
+
+function initExcel(){
 
 const excelBtn=document.getElementById("downloadExcelBtn");
 const modal=document.getElementById("excelModal");
 const close=document.getElementById("closeExcelModal");
 const sw=document.getElementById("excelModeSwitch");
 const dates=document.getElementById("dateSelector");
-const download=document.getElementById("confirmExcelDownload");
+const btn=document.getElementById("confirmExcelDownload");
 
-if(excelBtn && modal){
-    excelBtn.onclick=function(){
-        modal.style.display="flex";
-    };
-}
+if(!excelBtn || !modal) return;
 
-if(close){
-    close.onclick=function(){
-        modal.style.display="none";
-    };
-}
+excelBtn.onclick=function(){
+    modal.style.display="flex";
+};
 
-if(sw){
-    sw.onchange=function(){
-        dates.style.display=this.checked ? "block":"none";
-    };
-}
+close.onclick=function(){
+    modal.style.display="none";
+};
 
-if(download){
-    download.onclick=function(){
+window.onclick=function(e){
+    if(e.target===modal) modal.style.display="none";
+};
 
-        if(typeof selected === "undefined" || !selected){
-            alert("No hay mascota seleccionada");
+sw.onchange=function(){
+    dates.style.display=this.checked ? "block" : "none";
+};
+
+btn.onclick=function(){
+
+    if(typeof selected==="undefined" || !selected){
+        alert("Seleccione una mascota");
+        return;
+    }
+
+    let url="/api/excel/"+encodeURIComponent(selected);
+
+    if(sw.checked){
+
+        let inicio=document.getElementById("excelStart").value;
+        let fin=document.getElementById("excelEnd").value;
+
+        if(!inicio || !fin){
+            alert("Seleccione fecha inicial y final");
             return;
         }
 
-        let url="/api/excel/"+encodeURIComponent(selected);
+        url += "?inicio="+inicio+"&fin="+fin;
 
-        if(sw && sw.checked){
+    }else{
 
-            let ini=document.getElementById("excelStart").value;
-            let fin=document.getElementById("excelEnd").value;
+        url += "?escala=todo";
 
-            if(!ini || !fin){
-                alert("Seleccione ambas fechas");
-                return;
-            }
+    }
 
-            url += "?inicio="+ini+"&fin="+fin;
+    window.location.assign(url);
+};
 
-        }else{
-
-            url += "?escala=todo";
-
-        }
-
-        window.location.href=url;
-    };
 }
 
-});
+document.addEventListener("DOMContentLoaded",initExcel);
+
+})();
 
 </script>
 
@@ -1062,24 +1066,29 @@ if(download){
 
 
 <div id="excelModal" class="modal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
-<div class="modal-content" style="background:white;padding:25px;border-radius:15px;min-width:330px;position:relative;">
-<span id="closeExcelModal" style="position:absolute;right:15px;top:10px;cursor:pointer;font-size:22px;">✕</span>
-<h3>📥 Descargar Excel</h3>
+<div class="modal-content" style="background:#fff;padding:30px;border-radius:18px;width:380px;position:relative;text-align:center;">
+<span id="closeExcelModal" style="position:absolute;right:18px;top:12px;font-size:25px;cursor:pointer;">✕</span>
+<h2>📥 Descargar Excel</h2>
 
-<label style="display:flex;gap:10px;align-items:center;">
+<div style="margin:20px 0;">
+<label style="display:flex;justify-content:center;gap:12px;align-items:center;">
 <input type="checkbox" id="excelModeSwitch">
- Descargar por intervalo de fechas
+<span>Descargar por intervalo de fechas</span>
 </label>
-
-<div id="dateSelector" style="display:none;margin-top:20px;">
-<label>Fecha inicial</label>
-<input type="date" id="excelStart" style="width:100%;"><br><br>
-<label>Fecha final</label>
-<input type="date" id="excelEnd" style="width:100%;">
 </div>
 
-<br>
-<button id="confirmExcelDownload">Descargar</button>
+<div id="dateSelector" style="display:none;text-align:left;">
+<label>Fecha inicial</label>
+<input type="date" id="excelStart" style="width:100%;padding:8px;"><br><br>
+
+<label>Fecha final</label>
+<input type="date" id="excelEnd" style="width:100%;padding:8px;">
+</div>
+
+<button id="confirmExcelDownload" style="margin-top:20px;padding:10px 25px;">
+Descargar
+</button>
+
 </div>
 </div>
 
@@ -1387,3 +1396,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
