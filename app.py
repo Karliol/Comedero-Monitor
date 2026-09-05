@@ -1105,7 +1105,7 @@ if(saveNewKey){
  saveNewKey.onclick=async()=>{
    const key=(newKeyInput.value||'').trim();
 
-   if(!/^\\d{4}$/.test(key)){
+   if(!/^\d{4}$/.test(key)){
      alert('La clave debe tener exactamente 4 dígitos.');
      return;
    }
@@ -1130,15 +1130,39 @@ if(saveNewKey){
 
 
 if(verifyAdvanced){
- verifyAdvanced.onclick=()=>{
-   const key = advancedKey.value.trim();
+ verifyAdvanced.onclick=async()=>{
+   const key=(advancedKey.value||'').trim();
 
-   if(key.length===4){
+   if(!/^\d{4}$/.test(key)){
+     alert('Ingrese una clave válida de 4 dígitos');
+     return;
+   }
+
+   if(!selected){
+     alert('Seleccione una mascota primero.');
+     return;
+   }
+
+   try{
+     const r=await fetch('/api/mascota/verificar',{
+       method:'POST',
+       headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({mascota_id:selected,clave:key})
+     });
+
+     const j=await r.json();
+
+     if(!j.ok){
+       alert('Clave incorrecta');
+       return;
+     }
+
      window.advancedAuthenticated=true;
      document.getElementById('advancedLogin').style.display='none';
      document.getElementById('advancedOptions').style.display='block';
-   }else{
-     alert('Ingrese una clave válida de 4 dígitos');
+
+   }catch(e){
+     alert('No se pudo verificar la clave.');
    }
  };
 }
@@ -1927,4 +1951,5 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
