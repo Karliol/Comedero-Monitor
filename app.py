@@ -1294,6 +1294,44 @@ Descargar
 
 </div>
 </div>
+
+<script>
+// V2.3.6 - binding seguro del acceso MODO MAESTRO
+(function(){
+ function iniciarModoMaestro(){
+   const btn=document.getElementById("masterMode");
+   const modal=document.getElementById("masterModal");
+   const close=document.getElementById("closeMaster");
+   const key=document.getElementById("masterKey");
+   const login=document.getElementById("masterLogin");
+   const panel=document.getElementById("masterPanel");
+
+   if(!btn || !modal) return;
+
+   const cerrar=function(){
+     modal.style.display="none";
+     if(login) login.style.display="block";
+     if(panel) panel.style.display="none";
+     if(key) key.value="";
+   };
+
+   btn.onclick=function(e){
+     e.preventDefault();
+     cerrar();
+     modal.style.display="flex";
+   };
+
+   if(close) close.onclick=cerrar;
+ }
+
+ if(document.readyState==="loading"){
+   document.addEventListener("DOMContentLoaded", iniciarModoMaestro);
+ }else{
+   iniciarModoMaestro();
+ }
+})();
+</script>
+
 </body>
 </html>"""
 
