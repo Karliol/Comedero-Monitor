@@ -1,5 +1,4 @@
 
-
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -343,6 +342,67 @@ canvas{
   .value{font-size:25px}
   .chart-wrap{height:330px}
 }
+
+.modalOverlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(15,23,42,.45);
+backdrop-filter:blur(3px);
+align-items:center;
+justify-content:center;
+z-index:999;
+}
+
+.modalCard{
+background:white;
+width:min(430px,90%);
+padding:28px;
+border-radius:22px;
+box-shadow:0 20px 50px rgba(0,0,0,.25);
+position:relative;
+}
+
+.modalCard h2{
+margin-top:0;
+color:#102a43;
+}
+
+.modalClose{
+position:absolute;
+right:18px;
+top:14px;
+border:none;
+background:none;
+font-size:28px;
+cursor:pointer;
+}
+
+.modalInput{
+width:100%;
+padding:10px;
+border:1px solid #cbd5e1;
+border-radius:8px;
+margin:8px 0;
+box-sizing:border-box;
+}
+
+.modalButton{
+margin-top:15px;
+width:100%;
+}
+
+.action.danger{
+background:#dc2626;
+color:white;
+}
+
+.advancedCard .action{
+display:block;
+width:100%;
+margin:10px 0;
+}
+
 </style>
 </head>
 <body>
@@ -898,6 +958,9 @@ const closeAdvanced=document.getElementById('closeAdvanced');
 const verifyAdvanced=document.getElementById('verifyAdvanced');
 const advancedKey=document.getElementById('advancedKey');
 const excelDownload=document.getElementById('excelDownload');
+const openExcel=document.getElementById('openExcel');
+const excelPanel=document.getElementById('excelPanel');
+const closeExcel=document.getElementById('closeExcel');
 const fullSwitch=document.getElementById('fullSwitch');
 const rangeSwitch=document.getElementById('rangeSwitch');
 const dateBox=document.getElementById('dateBox');
@@ -912,6 +975,18 @@ if(advancedBtn && advancedPanel){
 if(closeAdvanced && advancedPanel){
  closeAdvanced.onclick=()=>advancedPanel.style.display='none';
 }
+
+if(openExcel && excelPanel){
+ openExcel.onclick=()=>{
+   advancedPanel.style.display='none';
+   excelPanel.style.display='flex';
+ };
+}
+
+if(closeExcel && excelPanel){
+ closeExcel.onclick=()=>excelPanel.style.display='none';
+}
+
 
 if(verifyAdvanced){
  verifyAdvanced.onclick=()=>{
@@ -984,29 +1059,61 @@ loadPets().catch(console.error);
 
 </script>
 
-<div id="advancedPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:999;">
-<div style="background:white;padding:25px;border-radius:18px;width:min(420px,90%);position:relative;">
-<button id="closeAdvanced" style="position:absolute;right:15px;top:10px;border:0;background:none;font-size:25px;">×</button>
+<div id="advancedPanel" class="modalOverlay">
+<div class="modalCard advancedCard">
+
+<button id="closeAdvanced" class="modalClose">×</button>
 
 <div id="advancedLogin">
-<h3>⚙ Opciones avanzadas</h3>
+<h2>⚙ Opciones avanzadas</h2>
 <p>Ingrese clave de 4 dígitos</p>
-<input id="advancedKey" maxlength="4" type="password">
-<br><br><button id="verifyAdvanced" class="action">Ingresar</button>
+<input id="advancedKey" maxlength="4" type="password" class="modalInput">
+<button id="verifyAdvanced" class="action primary modalButton">Ingresar</button>
 </div>
 
 <div id="advancedOptions" style="display:none;">
-<h3>📥 Descargar Excel</h3>
-<label><input id="fullSwitch" type="radio" name="mode" checked> Registro completo</label><br>
-<label><input id="rangeSwitch" type="radio" name="mode"> Intervalo de fechas</label>
+<h2>⚙ Opciones avanzadas</h2>
+
+<button id="openExcel" class="action primary">📥 Descargar Excel</button>
+<button id="restartData" class="action">🔄 Reiniciar toma de datos</button>
+<button id="deleteHistory" class="action danger">🗑 Eliminar historial completo</button>
+<button id="changeKey" class="action">🔑 Cambiar clave</button>
+
+</div>
+</div>
+</div>
+
+<div id="excelPanel" class="modalOverlay" style="display:none;">
+<div class="modalCard">
+
+<button id="closeExcel" class="modalClose">×</button>
+
+<h2>📥 Descargar Excel</h2>
+
+<label>
+<input id="fullSwitch" type="radio" name="mode" checked>
+Registro completo
+</label>
+
+<br>
+
+<label>
+<input id="rangeSwitch" type="radio" name="mode">
+Intervalo de fechas
+</label>
 
 <div id="dateBox" style="display:none;margin-top:15px;">
-<p>Fecha inicial:</p><input id="dateStart" type="date">
-<p>Fecha final:</p><input id="dateEnd" type="date">
+<p>Fecha inicial:</p>
+<input id="dateStart" type="date" class="modalInput">
+
+<p>Fecha final:</p>
+<input id="dateEnd" type="date" class="modalInput">
 </div>
 
-<br><button id="excelDownload" class="action primary">Descargar</button>
-</div>
+<button id="excelDownload" class="action primary modalButton">
+Descargar
+</button>
+
 </div>
 </div>
 
