@@ -83,12 +83,17 @@ Base.metadata.create_all(engine)
 def inicializar_plataforma():
     with SessionLocal() as db:
         pet = db.execute(
-            select(Mascota).where(Mascota.mascota_id == "mascota01")
+            select(Mascota).where(Mascota.mascota_id == "gato01")
         ).scalar_one_or_none()
 
         if pet is None:
+            pet = db.execute(
+                select(Mascota).where(Mascota.nombre == "Bimbolete")
+            ).scalar_one_or_none()
+
+        if pet is None:
             db.add(Mascota(
-                mascota_id="mascota01",
+                mascota_id="gato01",
                 nombre="Bimbolete",
                 clave_hash=hash_clave("1234"),
                 visible=True,
@@ -402,6 +407,10 @@ canvas{
 <div class="actions">
 <button id="excelRange" class="action">📥 Excel de la escala visible</button>
 <button id="excelAll" class="action primary">📥 Excel completo de la mascota</button>
+</div>
+
+<div class="actions" style="justify-content:center;margin-top:18px">
+<button id="advancedBtn" class="action">⚙ OPCIONES AVANZADAS</button>
 </div>
 </section>
 </main>
@@ -885,6 +894,16 @@ if(excelRange) excelRange.addEventListener('click',()=>{if(selected)location.hre
 const excelAll=document.getElementById('excelAll');
 if(excelAll) excelAll.addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo'});
 
+const advancedBtn=document.getElementById('advancedBtn');
+if(advancedBtn){
+  advancedBtn.addEventListener('click',()=>{
+    const clave=prompt('Ingrese clave de 4 dígitos');
+    if(clave){
+      alert('Modo avanzado será habilitado en la versión V2.2');
+    }
+  });
+}
+
 let resizeTimer=null;
 function redrawSoon(){
   clearTimeout(resizeTimer);
@@ -981,8 +1000,9 @@ def pets():
     vistos=set()
     mascotas=[]
     for r in rows:
-        if r.mascota_id not in vistos:
-            vistos.add(r.mascota_id)
+        clave=(r.nombre.strip().lower())
+        if clave not in vistos:
+            vistos.add(clave)
             mascotas.append({"id": r.mascota_id, "nombre": r.nombre})
 
     return jsonify(mascotas)
@@ -1189,3 +1209,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
