@@ -759,7 +759,9 @@ resetData.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=pet.options[pet.selectedIndex]?.textContent||'esta mascota';
   const ok=confirm(
-    '¿Reiniciar la toma de datos de '+nombre+'?\n\n'+
+    '¿Reiniciar la toma de datos de '+nombre+'?
+
+'+
     'La gráfica y los cálculos visibles comenzarán desde cero. '+
     'Los registros históricos NO se eliminarán de la base de datos.'
   );
@@ -787,7 +789,9 @@ deleteAll.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=pet.options[pet.selectedIndex]?.textContent||'esta mascota';
   const ok=confirm(
-    '¿Estás seguro de eliminar todo el registro?\n\n'+
+    '¿Estás seguro de eliminar todo el registro?
+
+'+
     'Se eliminará permanentemente TODO el historial de '+nombre+'. '+
     'Esta acción no se puede deshacer.'
   );
@@ -1109,6 +1113,8 @@ def excel(pet_id):
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-inicializar_plataforma()\n\nif __name__ == "__main__":
+inicializar_plataforma()
+
+if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
