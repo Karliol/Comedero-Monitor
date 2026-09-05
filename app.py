@@ -82,11 +82,6 @@ Base.metadata.create_all(engine)
 
 def inicializar_plataforma():
     with SessionLocal() as db:
-        # Eliminación definitiva del registro antiguo mascota01
-        db.query(Mascota).filter(Mascota.mascota_id == "mascota01").delete(
-            synchronize_session=False
-        )
-        db.commit()
         pet = db.execute(
             select(Mascota).where(Mascota.mascota_id == "gato01")
         ).scalar_one_or_none()
@@ -1122,16 +1117,25 @@ loadPets().catch(console.error);
 // ===== V2.3.2 MODO MAESTRO ESTABLE =====
 document.addEventListener("DOMContentLoaded",()=>{
 const modal=document.getElementById("masterModal");
+const masterMode=document.getElementById("masterMode");
 const close=document.getElementById("closeMaster");
 const enter=document.getElementById("masterEnter");
 const save=document.getElementById("masterSave");
+const addPet=document.getElementById("addPet");
 
-if(close) close.onclick=()=>{
+function resetMaster(){
  modal.style.display="none";
  document.getElementById("masterLogin").style.display="block";
  document.getElementById("masterPanel").style.display="none";
  document.getElementById("masterKey").value="";
+}
+
+if(masterMode) masterMode.onclick=()=>{
+ modal.style.display="flex";
+ resetMaster();
 };
+
+if(close) close.onclick=resetMaster;
 
 async function cargarMaestro(){
  const res=await fetch("/api/master/mascotas");
@@ -1143,53 +1147,71 @@ async function cargarMaestro(){
   <div>Estado: ${p.visible?'🟢 Visible':'🔴 Oculta'}</div>
   <div class="masterActions">
    <button class="action" onclick="toggleMascota(${p.id})">${p.visible?'Ocultar':'Mostrar'}</button>
-   <button class="action">Editar</button>
-   <button class="action danger">Eliminar</button>
+   <button class="action" onclick="editarMascota(${p.id},'${p.nombre}')">Editar</button>
+   <button class="action danger" onclick="eliminarMascota(${p.id},'${p.nombre}')">Eliminar</button>
   </div>
  </div>`).join("");
 }
-
-window.editarMascota=async(id,nombre)=>{
- const nuevo=prompt("Nuevo nombre:",nombre);
- if(!nuevo)return;
- const clave=prompt("Nueva clave de 4 dígitos (dejar vacío para mantener):");
- const r=await fetch("/api/master/editar/"+id,{
-  method:"PUT",
-  headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({nombre:nuevo,clave:clave||""})
- });
- if(!r.ok){ alert("No se pudo editar"); return; }
- cargarMaestro();
-};
-
-window.eliminarMascota=async(id,nombre)=>{
- if(!confirm("¿Eliminar definitivamente "+nombre+"?")) return;
- const r=await fetch("/api/master/eliminar/"+id,{method:"DELETE"});
- if(!r.ok){ alert("No se pudo eliminar"); return; }
- cargarMaestro();
-};
 
 window.toggleMascota=async(id)=>{
  await fetch('/api/master/visible/'+id,{method:'POST'});
  cargarMaestro();
 };
 
+window.editarMascota=async(id,nombre)=>{
+ const nuevo=prompt("Nuevo nombre:",nombre);
+ if(!nuevo)return;
+ const clave=prompt("Nueva clave de 4 dígitos (vacío conserva):");
+ await fetch("/api/master/editar/"+id,{
+  method:"PUT",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({nombre:nuevo,clave:clave||""})
+ });
+ cargarMaestro();
+};
+
+window.eliminarMascota=async(id,nombre)=>{
+ if(!confirm("Eliminar definitivamente "+nombre+"?")) return;
+ await fetch("/api/master/eliminar/"+id,{method:"DELETE"});
+ cargarMaestro();
+};
+
+if(addPet) addPet.onclick=async()=>{
+ const mascota_id=prompt("ID ESP32:");
+ const nombre=prompt("Nombre:");
+ const clave=prompt("Clave de 4 dígitos:");
+ if(!mascota_id||!nombre||!clave)return;
+
+ const r=await fetch("/api/master/agregar",{
+ method:"POST",
+ headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({mascota_id,nombre,clave})
+ });
+ const j=await r.json();
+ if(!j.ok) alert(j.mensaje||"Error");
+ cargarMaestro();
+};
+
 if(enter) enter.onclick=async()=>{
  const clave=document.getElementById("masterKey").value;
- const r=await fetch("/api/master/verificar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clave})});
+ const r=await fetch("/api/master/verificar",{
+ method:"POST",
+ headers:{"Content-Type":"application/json"},
+ body:JSON.stringify({clave})
+ });
  const j=await r.json();
- if(!j.ok){alert("Clave incorrecta");return;}
+
+ if(!j.ok){
+  alert("Clave incorrecta");
+  return;
+ }
+
  document.getElementById("masterLogin").style.display="none";
  document.getElementById("masterPanel").style.display="block";
  cargarMaestro();
 };
 
-if(save) save.onclick=()=>{
- modal.style.display="none";
- document.getElementById("masterLogin").style.display="block";
- document.getElementById("masterPanel").style.display="none";
- document.getElementById("masterKey").value="";
-};
+if(save) save.onclick=resetMaster;
 });
 </script>
 
@@ -1510,29 +1532,25 @@ def master_verificar():
 @app.get("/api/master/mascotas")
 def master_mascotas():
     with SessionLocal() as db:
-        datos=db.query(Mascota).filter(Mascota.mascota_id!="mascota01").all()
+        datos=db.query(Mascota).filter(Mascota.mascota_id != "mascota01").all()
         return jsonify([{
-            "id":m.id,
-            "mascota_id":m.mascota_id,
-            "nombre":m.nombre,
-            "visible":m.visible
+            "id":m.id,"mascota_id":m.mascota_id,
+            "nombre":m.nombre,"visible":m.visible
         } for m in datos])
-
 
 @app.post("/api/master/visible/<int:id>")
 def master_visible(id):
     with SessionLocal() as db:
         m=db.get(Mascota,id)
-        if not m:
-            return jsonify(ok=False),404
+        if not m:return jsonify(ok=False)
         m.visible=not m.visible
         db.commit()
-    return jsonify(ok=True)
+        return jsonify(ok=True)
 
 
 @app.post("/api/master/agregar")
 def master_agregar():
-    data=request.get_json() or {}
+    data=request.get_json(silent=True) or {}
     mascota_id=str(data.get("mascota_id","")).strip()
     nombre=str(data.get("nombre","")).strip()
     clave=str(data.get("clave","")).strip()
@@ -1541,8 +1559,8 @@ def master_agregar():
         return jsonify(ok=False,mensaje="Datos inválidos"),400
 
     with SessionLocal() as db:
-        if db.query(Mascota).filter(Mascota.mascota_id==mascota_id).first():
-            return jsonify(ok=False,mensaje="ID existente"),400
+        if db.execute(select(Mascota).where(Mascota.mascota_id==mascota_id)).scalar_one_or_none():
+            return jsonify(ok=False,mensaje="ID ya existe"),400
 
         db.add(Mascota(
             mascota_id=mascota_id,
@@ -1552,28 +1570,28 @@ def master_agregar():
             fecha_creacion=now_lima()
         ))
         db.commit()
-
     return jsonify(ok=True)
 
 
 @app.put("/api/master/editar/<int:id>")
 def master_editar(id):
-    data=request.get_json() or {}
-
+    data=request.get_json(silent=True) or {}
     with SessionLocal() as db:
         m=db.get(Mascota,id)
         if not m:
             return jsonify(ok=False),404
 
-        if data.get("nombre"):
-            m.nombre=str(data["nombre"]).strip()
+        nombre=str(data.get("nombre","")).strip()
+        clave=str(data.get("clave","")).strip()
 
-        clave=str(data.get("clave",""))
-        if clave.isdigit() and len(clave)==4:
+        if nombre:
+            m.nombre=nombre
+        if clave:
+            if not(clave.isdigit() and len(clave)==4):
+                return jsonify(ok=False,mensaje="Clave inválida"),400
             m.clave_hash=hash_clave(clave)
 
         db.commit()
-
     return jsonify(ok=True)
 
 
@@ -1584,22 +1602,15 @@ def master_eliminar(id):
         if not m:
             return jsonify(ok=False),404
 
-        db.query(Medicion).filter(
-            Medicion.mascota_id==m.mascota_id
-        ).delete(synchronize_session=False)
-
-        db.query(ReinicioSesion).filter(
-            ReinicioSesion.mascota_id==m.mascota_id
-        ).delete(synchronize_session=False)
-
+        db.query(Medicion).filter(Medicion.mascota_id==m.mascota_id).delete(
+            synchronize_session=False
+        )
         db.delete(m)
         db.commit()
 
     return jsonify(ok=True)
 
-
 @app.get("/api/excel/<pet_id>")
-
 def excel(pet_id):
     scale = request.args.get("escala", "todo")
 
