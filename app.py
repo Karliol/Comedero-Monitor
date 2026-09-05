@@ -73,6 +73,13 @@ class Administrador(Base):
     clave_maestra_hash = Column(String(255), nullable=False)
 
 
+class Configuracion(Base):
+    __tablename__ = "configuracion"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    solicitar_clave_usuario = Column(Boolean, default=True)
+
+
 def hash_clave(clave):
     return hashlib.sha256(str(clave).encode()).hexdigest()
 
@@ -105,6 +112,10 @@ def inicializar_plataforma():
             db.add(Administrador(
                 clave_maestra_hash=hash_clave("9999")
             ))
+
+        cfg = db.execute(select(Configuracion)).scalar_one_or_none()
+        if cfg is None:
+            db.add(Configuracion(solicitar_clave_usuario=True))
 
         db.commit()
 
@@ -1231,6 +1242,19 @@ if(enter) enter.onclick=async()=>{
  cargarMaestro();
 };
 
+const keySwitch=document.getElementById("keySwitch");
+if(keySwitch){
+ fetch("/api/master/config").then(r=>r.json()).then(j=>{
+   keySwitch.checked=!!j.solicitar_clave;
+ });
+ keySwitch.onchange=async()=>{
+   await fetch("/api/master/config",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({solicitar_clave:keySwitch.checked})
+   });
+ };
+}
 if(save) save.onclick=resetMaster;
 });
 </script>
@@ -1309,6 +1333,12 @@ Descargar
 <h3>Mascotas registradas</h3>
 <div id="masterList"></div>
 <button id="addPet" class="action primary">＋ AGREGAR MASCOTA</button>
+<div style="margin:18px 0;padding:12px;border:1px solid #e5e7eb;border-radius:12px">
+<label style="display:flex;justify-content:space-between;align-items:center">
+<span>🔐 Solicitar clave de usuario</span>
+<input id="keySwitch" type="checkbox" checked>
+</label>
+</div>
 <button id="masterSave" class="action">GUARDAR Y SALIR</button>
 </div>
 
@@ -1585,7 +1615,7 @@ def verificar_mascota():
         m=db.query(Mascota).filter(Mascota.mascota_id==pet_id).first()
         if not m:
             return jsonify(ok=False)
-        return jsonify(ok=(hash_clave(clave)==m.clave_hash))
+        cfg=db.query(Configuracion).first()\n        if cfg and not cfg.solicitar_clave_usuario:\n            return jsonify(ok=True)\n        return jsonify(ok=(hash_clave(clave)==m.clave_hash))
 
 @app.post("/api/master/verificar")
 def master_verificar():
@@ -1678,6 +1708,42 @@ def master_eliminar(id):
         db.commit()
 
     return jsonify(ok=True)
+
+
+@app.get("/api/master/config")
+def master_config():
+    with SessionLocal() as db:
+        cfg=db.query(Configuracion).first()
+        return jsonify(solicitar_clave=bool(cfg.solicitar_clave_usuario) if cfg else True)
+
+
+
+@app.post("/api/master/editar-clave/<pet_id>")
+def editar_clave_usuario(pet_id):
+    data=request.get_json() or {}
+    clave=str(data.get("clave",""))
+    if not clave.isdigit() or len(clave)!=4:
+        return jsonify(ok=False,mensaje="Clave inválida"),400
+    with SessionLocal() as db:
+        m=db.query(Mascota).filter(Mascota.mascota_id==pet_id).first()
+        if not m:
+            return jsonify(ok=False),404
+        m.clave_hash=hash_clave(clave)
+        db.commit()
+    return jsonify(ok=True)
+
+@app.post("/api/master/config")
+def guardar_master_config():
+    data=request.get_json() or {}
+    with SessionLocal() as db:
+        cfg=db.query(Configuracion).first()
+        if not cfg:
+            cfg=Configuracion()
+            db.add(cfg)
+        cfg.solicitar_clave_usuario=bool(data.get("solicitar_clave",True))
+        db.commit()
+    return jsonify(ok=True)
+
 
 @app.get("/api/excel/<pet_id>")
 def excel(pet_id):
