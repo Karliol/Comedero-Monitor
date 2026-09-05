@@ -423,8 +423,6 @@ const chartWrap=document.getElementById('chartWrap');
 const ctx=canvas.getContext('2d');
 const tip=document.getElementById('tip');
 const empty=document.getElementById('empty');
-const resetData=document.getElementById('resetData');
-const deleteAll=document.getElementById('deleteAll');
 const resetZoom=document.getElementById('resetZoom');
 
 let selected='',scale='24h',points=[];
@@ -799,16 +797,19 @@ canvas.addEventListener('click',ev=>{
 
 resetZoom.addEventListener('click',resetView);
 
+const masterMode=document.getElementById('masterMode');
+if(masterMode){
+  masterMode.addEventListener('click',()=>{
+    alert('Modo maestro será habilitado en la versión V2.3');
+  });
+}
+
 backPets.addEventListener('click',()=>{
   dashboard.hidden=true;
   selectScreen.hidden=false;
 });
 
-pet.addEventListener('change',()=>{
-  selected=pet.value;
-  view=null;
-  updateAll(true);
-});
+
 document.querySelectorAll('.range').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('.range').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
@@ -818,9 +819,9 @@ document.querySelectorAll('.range').forEach(b=>b.addEventListener('click',()=>{
 }));
 document.getElementById('refresh').addEventListener('click',()=>updateAll(false));
 
-resetData.addEventListener('click',async()=>{
+if(resetData) resetData.addEventListener('click',async()=>{
   if(!selected)return;
-  const nombre=pet.options[pet.selectedIndex]?.textContent||'esta mascota';
+  const nombre=selected||'esta mascota';
   const ok=confirm(
     '¿Reiniciar la toma de datos de '+nombre+'?
 
@@ -848,9 +849,9 @@ resetData.addEventListener('click',async()=>{
   }
 });
 
-deleteAll.addEventListener('click',async()=>{
+if(deleteAll) deleteAll.addEventListener('click',async()=>{
   if(!selected)return;
-  const nombre=pet.options[pet.selectedIndex]?.textContent||'esta mascota';
+  const nombre=selected||'esta mascota';
   const ok=confirm(
     '¿Estás seguro de eliminar todo el registro?
 
@@ -1181,3 +1182,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
