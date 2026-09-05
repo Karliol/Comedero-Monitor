@@ -181,7 +181,7 @@ def valid_api_key():
 
 HTML = r"""<!doctype html>
 <html lang="es">
-<head>
+<head>\n<!-- V2.2.1 CORREGIDA -->
 <!-- V2.2 OPCIONES AVANZADAS -->
 <!-- Comedero IoT V2.1.1 limpio -->
 <meta charset="utf-8">
@@ -406,7 +406,7 @@ canvas{
 </div>
 <div id="empty" class="empty" hidden>No hay mediciones en esta escala de tiempo.</div>
 
-<div class="actions">
+<div class="actions advanced-only" style="display:none;">
 <button id="excelRange" class="action">📥 Excel de la escala visible</button>
 <button id="excelAll" class="action primary">📥 Excel completo de la mascota</button>
 </div>
@@ -901,7 +901,7 @@ if(advancedBtn){
   advancedBtn.addEventListener('click',()=>{
     const clave=prompt('Ingrese clave de 4 dígitos');
     if(clave){
-      alert('Modo avanzado será habilitado en la versión V2.2');
+      document.getElementById('advancedMenu').style.display='block';
     }
   });
 }
@@ -936,6 +936,7 @@ if(verifyAdv){
    const key=document.getElementById('advancedKey').value;
    if(key.length===4){
       document.getElementById('advancedMenu').style.display='block';
+      document.querySelectorAll('.advanced-only').forEach(e=>e.style.display='flex');
    }else{
       alert('Ingrese una clave válida de 4 dígitos');
    }
@@ -1256,3 +1257,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
