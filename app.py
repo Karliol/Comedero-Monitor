@@ -957,58 +957,65 @@ document.addEventListener('DOMContentLoaded',()=>{
  }
 });
 
-// ===== V2.2.6 CONSOLIDADA =====
-document.addEventListener("DOMContentLoaded",()=>{
+
+// ===== V2.2.7 EXCEL FIX =====
+document.addEventListener("DOMContentLoaded", function(){
 
 const excelBtn=document.getElementById("downloadExcelBtn");
-const excelModal=document.getElementById("excelModal");
-const closeExcel=document.getElementById("closeExcelModal");
-const switchExcel=document.getElementById("excelModeSwitch");
+const modal=document.getElementById("excelModal");
+const close=document.getElementById("closeExcelModal");
+const sw=document.getElementById("excelModeSwitch");
 const dates=document.getElementById("dateSelector");
-const confirmExcel=document.getElementById("confirmExcelDownload");
+const download=document.getElementById("confirmExcelDownload");
 
-if(excelBtn){
- excelBtn.onclick=()=>{
-   excelModal.style.display="flex";
- };
+if(excelBtn && modal){
+    excelBtn.onclick=function(){
+        modal.style.display="flex";
+    };
 }
 
-if(closeExcel){
- closeExcel.onclick=()=>{
-   excelModal.style.display="none";
- };
+if(close){
+    close.onclick=function(){
+        modal.style.display="none";
+    };
 }
 
-if(switchExcel){
- switchExcel.onchange=()=>{
-   dates.style.display=switchExcel.checked ? "block":"none";
- };
+if(sw){
+    sw.onchange=function(){
+        dates.style.display=this.checked ? "block":"none";
+    };
 }
 
-if(confirmExcel){
- confirmExcel.onclick=()=>{
-   if(!selected){
-     alert("Seleccione una mascota");
-     return;
-   }
+if(download){
+    download.onclick=function(){
 
-   if(switchExcel.checked){
-      let ini=document.getElementById("excelStart").value;
-      let fin=document.getElementById("excelEnd").value;
+        if(typeof selected === "undefined" || !selected){
+            alert("No hay mascota seleccionada");
+            return;
+        }
 
-      if(!ini || !fin){
-        alert("Seleccione ambas fechas");
-        return;
-      }
+        let url="/api/excel/"+encodeURIComponent(selected);
 
-      window.location.href="/api/excel/"+selected+
-      "?inicio="+ini+"&fin="+fin;
+        if(sw && sw.checked){
 
-   }else{
-      window.location.href="/api/excel/"+selected+
-      "?escala=todo";
-   }
- };
+            let ini=document.getElementById("excelStart").value;
+            let fin=document.getElementById("excelEnd").value;
+
+            if(!ini || !fin){
+                alert("Seleccione ambas fechas");
+                return;
+            }
+
+            url += "?inicio="+ini+"&fin="+fin;
+
+        }else{
+
+            url += "?escala=todo";
+
+        }
+
+        window.location.href=url;
+    };
 }
 
 });
@@ -1051,24 +1058,24 @@ if(confirmExcel){
 </div>
 
 
-<div id="excelModal" class="modal" style="display:none;">
-<div class="modal-content">
-<span id="closeExcelModal" style="float:right;cursor:pointer;">✕</span>
-<h3>📥 Descargar Excel</h3>
-
-<div>
-<label>
-<input type="checkbox" id="excelModeSwitch">
- Usar intervalo de fechas
-</label>
 </div>
 
-<div id="dateSelector" style="display:none;margin-top:15px;">
-<label>Fecha inicial</label><br>
-<input type="date" id="excelStart"><br><br>
 
-<label>Fecha final</label><br>
-<input type="date" id="excelEnd">
+<div id="excelModal" class="modal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+<div class="modal-content" style="background:white;padding:25px;border-radius:15px;min-width:330px;position:relative;">
+<span id="closeExcelModal" style="position:absolute;right:15px;top:10px;cursor:pointer;font-size:22px;">✕</span>
+<h3>📥 Descargar Excel</h3>
+
+<label style="display:flex;gap:10px;align-items:center;">
+<input type="checkbox" id="excelModeSwitch">
+ Descargar por intervalo de fechas
+</label>
+
+<div id="dateSelector" style="display:none;margin-top:20px;">
+<label>Fecha inicial</label>
+<input type="date" id="excelStart" style="width:100%;"><br><br>
+<label>Fecha final</label>
+<input type="date" id="excelEnd" style="width:100%;">
 </div>
 
 <br>
