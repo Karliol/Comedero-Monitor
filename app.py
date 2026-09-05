@@ -1,3 +1,4 @@
+
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -270,6 +271,35 @@ canvas{
 }
 .empty{color:var(--muted);font-size:14px}
 .cloud{font-size:12px;color:var(--muted);margin-top:4px}
+.select-screen{
+  min-height:70vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+}
+.select-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:30px;
+  width:min(420px,95%);
+  text-align:center;
+}
+.pet-choice{
+  width:100%;
+  margin:8px 0;
+  padding:14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:#fff;
+  cursor:pointer;
+  font-size:18px;
+}
+.back-btn{
+  background:#fff;
+}
 
 @media(max-width:850px){
   .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -313,14 +343,28 @@ canvas{
 </div>
 <div class="toolbar">
 <label for="pet">Mascota</label>
-<select id="pet"><option value="">Esperando datos...</option></select>
-<button id="refresh" class="action">Actualizar</button>
-<button id="resetData" class="action danger">Reiniciar toma de datos</button>
-<button id="deleteAll" class="action delete">Eliminar historial completo</button>
+<button id="masterMode" class="action">MODO MAESTRO</button>
+
+
+
 </div>
 </header>
 
 <main>
+
+<section id="selectScreen" class="select-screen">
+  <div class="select-card">
+    <h1>🐾 Comedero IoT</h1>
+    <p>Seleccione mascota</p>
+    <div id="petList"></div>
+  </div>
+</section>
+
+<section id="dashboard" hidden>
+<div class="actions" style="justify-content:flex-start;margin-top:0">
+<button id="backPets" class="action back-btn">← REGRESAR</button>
+</div>
+
 <div class="cards">
 <div class="card"><div class="label">Peso actual</div><div id="weight" class="value">0000 g</div><div class="small" style="margin-top:8px"><span id="dot" class="dot"></span><span id="status">Sin datos</span></div></div>
 <div class="card"><div class="label">Consumo estimado hoy</div><div id="today" class="value">0.0 g</div></div>
@@ -363,7 +407,11 @@ canvas{
 
 <script>
 (()=>{
-const pet=document.getElementById('pet');
+const pet=document.createElement('select');
+const petList=document.getElementById('petList');
+const selectScreen=document.getElementById('selectScreen');
+const dashboard=document.getElementById('dashboard');
+const backPets=document.getElementById('backPets');
 const weight=document.getElementById('weight');
 const today=document.getElementById('today');
 const lastc=document.getElementById('lastc');
@@ -424,19 +472,27 @@ function resetView(){
 
 async function loadPets(){
   const arr=await getj('/api/mascotas');
-  const old=pet.value;
-  pet.innerHTML='';
+  petList.innerHTML='';
+
   if(!arr.length){
     pet.innerHTML='<option value="">Esperando datos...</option>';
     selected='';points=[];sessionMax=10;view=null;draw([]);return;
   }
   arr.forEach(x=>{
-    const o=document.createElement('option');
-    o.value=x.id;o.textContent=x.nombre;pet.appendChild(o);
+    const b=document.createElement('button');
+    b.className='pet-choice';
+    b.textContent='🐱 '+x.nombre;
+    b.onclick=()=>{
+      selected=x.id;
+      selectScreen.hidden=true;
+      dashboard.hidden=false;
+      updateAll(true);
+    };
+    petList.appendChild(b);
   });
-  pet.value=arr.some(x=>x.id===old)?old:arr[0].id;
-  selected=pet.value;
-  await updateAll(true);
+  if(!selected){
+    dashboard.hidden=true;
+  }
 }
 
 async function updateCurrent(){
@@ -742,6 +798,11 @@ canvas.addEventListener('click',ev=>{
 });
 
 resetZoom.addEventListener('click',resetView);
+
+backPets.addEventListener('click',()=>{
+  dashboard.hidden=true;
+  selectScreen.hidden=false;
+});
 
 pet.addEventListener('change',()=>{
   selected=pet.value;
@@ -1120,4 +1181,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
