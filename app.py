@@ -1108,6 +1108,36 @@ loadPets().catch(console.error);
 })();
 
 
+
+// ===== V2.3 MODO MAESTRO =====
+document.addEventListener("DOMContentLoaded",()=>{
+const btn=document.getElementById("masterMode");
+const modal=document.getElementById("masterModal");
+const close=document.getElementById("closeMaster");
+const enter=document.getElementById("masterEnter");
+
+if(btn) btn.onclick=()=>modal.style.display="flex";
+if(close) close.onclick=()=>modal.style.display="none";
+
+if(enter){
+ enter.onclick=async()=>{
+   const clave=document.getElementById("masterKey").value;
+   const r=await fetch("/api/master/verificar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clave})});
+   const j=await r.json();
+   if(!j.ok){alert("Clave incorrecta");return;}
+   document.getElementById("masterLogin").style.display="none";
+   document.getElementById("masterPanel").style.display="block";
+
+   const res=await fetch("/api/master/mascotas");
+   const pets=await res.json();
+   document.getElementById("masterList").innerHTML=pets.map(p=>
+   `<div class="masterRow">
+   🐱 ${p.nombre}<br>ID: ${p.mascota_id}<br>
+   Estado: ${p.visible?"Visible":"Oculta"}
+   </div>`).join("");
+ };
+}
+});
 </script>
 
 <div id="advancedPanel" class="modalOverlay">
@@ -1168,6 +1198,26 @@ Descargar
 </div>
 </div>
 
+
+<div id="masterModal" class="modalOverlay" style="display:none">
+<div class="modalCard">
+<button id="closeMaster" class="modalClose">×</button>
+<h2>⚙ MODO MAESTRO</h2>
+
+<div id="masterLogin">
+<p>Ingrese clave maestra</p>
+<input id="masterKey" type="password" maxlength="4" class="modalInput">
+<button id="masterEnter" class="action primary modalButton">Ingresar</button>
+</div>
+
+<div id="masterPanel" style="display:none">
+<h3>Mascotas registradas</h3>
+<div id="masterList"></div>
+<button class="action primary">＋ AGREGAR MASCOTA</button>
+</div>
+
+</div>
+</div>
 </body>
 </html>"""
 
@@ -1390,6 +1440,36 @@ def reset_session(pet_id):
         db.commit()
 
     return jsonify(estado="ok", mensaje="Toma de datos reiniciada", fecha_hora=fmt_dt(timestamp))
+
+
+@app.post("/api/master/verificar")
+def master_verificar():
+    data=request.get_json() or {}
+    clave=str(data.get("clave",""))
+    with SessionLocal() as db:
+        admin=db.query(Administrador).first()
+        if not admin:
+            admin=Administrador(clave_maestra_hash=hash_clave("9999"))
+            db.add(admin); db.commit()
+        return jsonify(ok=(hash_clave(clave)==admin.clave_maestra_hash))
+
+@app.get("/api/master/mascotas")
+def master_mascotas():
+    with SessionLocal() as db:
+        datos=db.query(Mascota).all()
+        return jsonify([{
+            "id":m.id,"mascota_id":m.mascota_id,
+            "nombre":m.nombre,"visible":m.visible
+        } for m in datos])
+
+@app.post("/api/master/visible/<int:id>")
+def master_visible(id):
+    with SessionLocal() as db:
+        m=db.get(Mascota,id)
+        if not m:return jsonify(ok=False)
+        m.visible=not m.visible
+        db.commit()
+        return jsonify(ok=True)
 
 @app.get("/api/excel/<pet_id>")
 def excel(pet_id):
