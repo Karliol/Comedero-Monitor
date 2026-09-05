@@ -1111,7 +1111,7 @@ if(verifyAdvanced){
    }
 
    try{
-     const r=await fetch('/api/mascota/verificar',{
+     const r=await fetch('/api/mascota/verificar_clave_avanzada',{
        method:'POST',
        headers:{'Content-Type':'application/json'},
        body:JSON.stringify({mascota_id:selected, clave:key})
@@ -1663,6 +1663,18 @@ def verificar_mascota():
         cfg=db.query(Configuracion).first()
         if cfg and not cfg.solicitar_clave_usuario:
             return jsonify(ok=True)
+        return jsonify(ok=(hash_clave(clave)==m.clave_hash))
+
+
+@app.post("/api/mascota/verificar_clave_avanzada")
+def verificar_clave_avanzada():
+    data=request.get_json() or {}
+    pet_id=str(data.get("mascota_id",""))
+    clave=str(data.get("clave","")).strip()
+    with SessionLocal() as db:
+        m=db.query(Mascota).filter(Mascota.mascota_id==pet_id).first()
+        if not m:
+            return jsonify(ok=False)
         return jsonify(ok=(hash_clave(clave)==m.clave_hash))
 
 @app.post("/api/master/verificar")
