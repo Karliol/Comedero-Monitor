@@ -1007,19 +1007,7 @@ def pets():
             for r in rows
         ]
 
-
-resultado = {}
-for m in mascotas:
-    nombre = m["nombre"].strip().lower()
-    if nombre not in resultado or m["mediciones"] > resultado[nombre]["mediciones"]:
-        resultado[nombre] = m
-
-mascotas = [
-    {"id": m["id"], "nombre": m["nombre"]}
-    for m in resultado.values()
-]
-
-    return jsonify(mascotas)
+        return jsonify(mascotas)
 
 @app.get("/api/ultimo/<pet_id>")
 def latest(pet_id):
