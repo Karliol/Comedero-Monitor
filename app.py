@@ -271,6 +271,7 @@ canvas{
 }
 .empty{color:var(--muted);font-size:14px}
 .cloud{font-size:12px;color:var(--muted);margin-top:4px}
+.hidden-view{display:none !important;}
 .select-screen{
   min-height:70vh;
   display:flex;
@@ -360,7 +361,7 @@ canvas{
   </div>
 </section>
 
-<section id="dashboard" hidden>
+<section id="dashboard" class="hidden-view">
 <div class="actions" style="justify-content:flex-start;margin-top:0">
 <button id="backPets" class="action back-btn">← REGRESAR</button>
 </div>
@@ -482,14 +483,14 @@ async function loadPets(){
     b.textContent='🐱 '+x.nombre;
     b.onclick=()=>{
       selected=x.id;
-      selectScreen.hidden=true;
-      dashboard.hidden=false;
+      selectScreen.classList.add('hidden-view');
+      dashboard.classList.remove('hidden-view');
       updateAll(true);
     };
     petList.appendChild(b);
   });
   if(!selected){
-    dashboard.hidden=true;
+    dashboard.classList.add('hidden-view');
   }
 }
 
@@ -805,8 +806,8 @@ if(masterMode){
 }
 
 backPets.addEventListener('click',()=>{
-  dashboard.hidden=true;
-  selectScreen.hidden=false;
+  dashboard.classList.add('hidden-view');
+  selectScreen.classList.remove('hidden-view');
 });
 
 
@@ -977,10 +978,14 @@ def pets():
             .order_by(Mascota.nombre.asc())
         ).scalars().all()
 
-    return jsonify([
-        {"id": r.mascota_id, "nombre": r.nombre}
-        for r in rows
-    ])
+    vistos=set()
+    mascotas=[]
+    for r in rows:
+        if r.mascota_id not in vistos:
+            vistos.add(r.mascota_id)
+            mascotas.append({"id": r.mascota_id, "nombre": r.nombre})
+
+    return jsonify(mascotas)
 
 @app.get("/api/ultimo/<pet_id>")
 def latest(pet_id):
@@ -1184,4 +1189,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
