@@ -82,6 +82,11 @@ Base.metadata.create_all(engine)
 
 def inicializar_plataforma():
     with SessionLocal() as db:
+        # Eliminación definitiva del registro antiguo mascota01
+        db.query(Mascota).filter(Mascota.mascota_id == "mascota01").delete(
+            synchronize_session=False
+        )
+        db.commit()
         pet = db.execute(
             select(Mascota).where(Mascota.mascota_id == "gato01")
         ).scalar_one_or_none()
@@ -1143,6 +1148,25 @@ async function cargarMaestro(){
   </div>
  </div>`).join("");
 }
+
+window.editarMascota=async(id,nombre)=>{
+ const nuevo=prompt("Nuevo nombre:",nombre);
+ if(!nuevo)return;
+ const clave=prompt("Nueva clave de 4 dígitos (dejar vacío para mantener):");
+ await fetch("/api/master/editar/"+id,{
+  method:"PUT",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({nombre:nuevo,clave:clave||""})
+ });
+ cargarMaestro();
+};
+
+window.eliminarMascota=async(id,nombre)=>{
+ if(!confirm("¿Eliminar definitivamente "+nombre+"?")) return;
+ await fetch("/api/master/eliminar/"+id,{method:"DELETE"});
+ cargarMaestro();
+};
+
 window.toggleMascota=async(id)=>{
  await fetch('/api/master/visible/'+id,{method:'POST'});
  cargarMaestro();
@@ -1484,22 +1508,96 @@ def master_verificar():
 @app.get("/api/master/mascotas")
 def master_mascotas():
     with SessionLocal() as db:
-        datos=db.query(Mascota).filter(Mascota.mascota_id != "mascota01").all()
+        datos=db.query(Mascota).filter(Mascota.mascota_id!="mascota01").all()
         return jsonify([{
-            "id":m.id,"mascota_id":m.mascota_id,
-            "nombre":m.nombre,"visible":m.visible
+            "id":m.id,
+            "mascota_id":m.mascota_id,
+            "nombre":m.nombre,
+            "visible":m.visible
         } for m in datos])
+
 
 @app.post("/api/master/visible/<int:id>")
 def master_visible(id):
     with SessionLocal() as db:
         m=db.get(Mascota,id)
-        if not m:return jsonify(ok=False)
+        if not m:
+            return jsonify(ok=False),404
         m.visible=not m.visible
         db.commit()
-        return jsonify(ok=True)
+    return jsonify(ok=True)
+
+
+@app.post("/api/master/agregar")
+def master_agregar():
+    data=request.get_json() or {}
+    mascota_id=str(data.get("mascota_id","")).strip()
+    nombre=str(data.get("nombre","")).strip()
+    clave=str(data.get("clave","")).strip()
+
+    if not mascota_id or not nombre or not(clave.isdigit() and len(clave)==4):
+        return jsonify(ok=False,mensaje="Datos inválidos"),400
+
+    with SessionLocal() as db:
+        if db.query(Mascota).filter(Mascota.mascota_id==mascota_id).first():
+            return jsonify(ok=False,mensaje="ID existente"),400
+
+        db.add(Mascota(
+            mascota_id=mascota_id,
+            nombre=nombre,
+            clave_hash=hash_clave(clave),
+            visible=True,
+            fecha_creacion=now_lima()
+        ))
+        db.commit()
+
+    return jsonify(ok=True)
+
+
+@app.put("/api/master/editar/<int:id>")
+def master_editar(id):
+    data=request.get_json() or {}
+
+    with SessionLocal() as db:
+        m=db.get(Mascota,id)
+        if not m:
+            return jsonify(ok=False),404
+
+        if data.get("nombre"):
+            m.nombre=str(data["nombre"]).strip()
+
+        clave=str(data.get("clave",""))
+        if clave.isdigit() and len(clave)==4:
+            m.clave_hash=hash_clave(clave)
+
+        db.commit()
+
+    return jsonify(ok=True)
+
+
+@app.delete("/api/master/eliminar/<int:id>")
+def master_eliminar(id):
+    with SessionLocal() as db:
+        m=db.get(Mascota,id)
+        if not m:
+            return jsonify(ok=False),404
+
+        db.query(Medicion).filter(
+            Medicion.mascota_id==m.mascota_id
+        ).delete(synchronize_session=False)
+
+        db.query(ReinicioSesion).filter(
+            ReinicioSesion.mascota_id==m.mascota_id
+        ).delete(synchronize_session=False)
+
+        db.delete(m)
+        db.commit()
+
+    return jsonify(ok=True)
+
 
 @app.get("/api/excel/<pet_id>")
+
 def excel(pet_id):
     scale = request.args.get("escala", "todo")
 
