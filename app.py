@@ -403,6 +403,10 @@ width:100%;
 margin:10px 0;
 }
 
+
+.masterCard{background:#fff;border:1px solid #ddd;border-radius:14px;padding:14px;margin:12px 0;box-shadow:0 2px 8px #0001;}
+.masterCard h4{margin:0 0 8px;font-size:18px;}
+.masterActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
 </style>
 </head>
 <body>
@@ -1110,26 +1114,33 @@ loadPets().catch(console.error);
 
 
 
-// ===== V2.3 MODO MAESTRO =====
+// ===== V2.3.2 MODO MAESTRO ESTABLE =====
 document.addEventListener("DOMContentLoaded",()=>{
 const modal=document.getElementById("masterModal");
 const close=document.getElementById("closeMaster");
 const enter=document.getElementById("masterEnter");
 const save=document.getElementById("masterSave");
 
-if(close) close.onclick=()=>{modal.style.display="none";};
+if(close) close.onclick=()=>{
+ modal.style.display="none";
+ document.getElementById("masterLogin").style.display="block";
+ document.getElementById("masterPanel").style.display="none";
+ document.getElementById("masterKey").value="";
+};
 
 async function cargarMaestro(){
  const res=await fetch("/api/master/mascotas");
  const pets=await res.json();
  document.getElementById("masterList").innerHTML=pets.map(p=>`
- <div class="masterRow">
- 🐱 <b>${p.nombre}</b><br>
- ID: ${p.mascota_id}<br>
- Estado: ${p.visible?"Visible 🟢":"Oculta 🔴"}<br>
- <button class="action" onclick="toggleMascota(${p.id})">${p.visible?'Ocultar':'Mostrar'}</button>
- <button class="action">Editar</button>
- <button class="action danger">Eliminar</button>
+ <div class="masterCard">
+  <h4>🐱 ${p.nombre}</h4>
+  <div>ID: ${p.mascota_id}</div>
+  <div>Estado: ${p.visible?'🟢 Visible':'🔴 Oculta'}</div>
+  <div class="masterActions">
+   <button class="action" onclick="toggleMascota(${p.id})">${p.visible?'Ocultar':'Mostrar'}</button>
+   <button class="action">Editar</button>
+   <button class="action danger">Eliminar</button>
+  </div>
  </div>`).join("");
 }
 window.toggleMascota=async(id)=>{
@@ -1146,7 +1157,13 @@ if(enter) enter.onclick=async()=>{
  document.getElementById("masterPanel").style.display="block";
  cargarMaestro();
 };
-if(save) save.onclick=()=>{modal.style.display="none";};
+
+if(save) save.onclick=()=>{
+ modal.style.display="none";
+ document.getElementById("masterLogin").style.display="block";
+ document.getElementById("masterPanel").style.display="none";
+ document.getElementById("masterKey").value="";
+};
 });
 </script>
 
@@ -1467,7 +1484,7 @@ def master_verificar():
 @app.get("/api/master/mascotas")
 def master_mascotas():
     with SessionLocal() as db:
-        datos=db.query(Mascota).all()
+        datos=db.query(Mascota).filter(Mascota.mascota_id != "mascota01").all()
         return jsonify([{
             "id":m.id,"mascota_id":m.mascota_id,
             "nombre":m.nombre,"visible":m.visible
