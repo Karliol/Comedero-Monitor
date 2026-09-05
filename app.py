@@ -181,7 +181,8 @@ def valid_api_key():
 
 HTML = r"""<!doctype html>
 <html lang="es">
-<head>\n<!-- V2.2.1 CORREGIDA -->
+<head>
+<!-- V2.2.2 CORREGIDA -->
 <!-- V2.2 OPCIONES AVANZADAS -->
 <!-- Comedero IoT V2.1.1 limpio -->
 <meta charset="utf-8">
@@ -919,29 +920,34 @@ setInterval(()=>{if(selected){updateCurrent();updateStats();updateChart(false);}
 loadPets().catch(console.error);
 })();
 
-// V2.2 OPCIONES AVANZADAS
-const adv=document.getElementById('advancedBtn');
-const panel=document.getElementById('advancedPanel');
-const closeAdv=document.getElementById('closeAdvanced');
-const verifyAdv=document.getElementById('verifyAdvanced');
+// V2.2.2 OPCIONES AVANZADAS
+document.addEventListener('DOMContentLoaded',()=>{
+ const adv=document.getElementById('advancedBtn');
+ const panel=document.getElementById('advancedPanel');
+ const closeAdv=document.getElementById('closeAdvanced');
+ const verifyAdv=document.getElementById('verifyAdvanced');
 
-if(adv){
- adv.onclick=()=>panel.style.display='flex';
-}
-if(closeAdv){
- closeAdv.onclick=()=>panel.style.display='none';
-}
-if(verifyAdv){
- verifyAdv.onclick=()=>{
-   const key=document.getElementById('advancedKey').value;
-   if(key.length===4){
-      document.getElementById('advancedMenu').style.display='block';
-      document.querySelectorAll('.advanced-only').forEach(e=>e.style.display='flex');
-   }else{
-      alert('Ingrese una clave válida de 4 dígitos');
-   }
- };
-}
+ if(adv && panel){
+   adv.onclick=()=>panel.style.display='flex';
+ }
+
+ if(closeAdv && panel){
+   closeAdv.onclick=()=>panel.style.display='none';
+ }
+
+ if(verifyAdv){
+   verifyAdv.onclick=()=>{
+     const key=document.getElementById('advancedKey').value.trim();
+
+     if(key.length===4){
+        document.getElementById('advancedMenu').style.display='block';
+        document.querySelectorAll('.advanced-only').forEach(e=>e.style.display='flex');
+     }else{
+        alert('Ingrese una clave válida de 4 dígitos');
+     }
+   };
+ }
+});
 
 </script>
 
@@ -1257,4 +1263,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
