@@ -1,4 +1,5 @@
 
+
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -889,6 +890,8 @@ if(deleteAll) deleteAll.addEventListener('click',async()=>{
   }
 });
 
+document.addEventListener('DOMContentLoaded',()=>{
+
 const advancedBtn=document.getElementById('advancedBtn');
 const advancedPanel=document.getElementById('advancedPanel');
 const closeAdvanced=document.getElementById('closeAdvanced');
@@ -899,8 +902,16 @@ const fullSwitch=document.getElementById('fullSwitch');
 const rangeSwitch=document.getElementById('rangeSwitch');
 const dateBox=document.getElementById('dateBox');
 
-if(advancedBtn){ advancedBtn.onclick=()=>{advancedPanel.style.display='flex';advancedKey.value='';}; }
-if(closeAdvanced){ closeAdvanced.onclick=()=>advancedPanel.style.display='none'; }
+if(advancedBtn && advancedPanel){
+ advancedBtn.onclick=()=>{
+   advancedPanel.style.display='flex';
+   if(advancedKey) advancedKey.value='';
+ };
+}
+
+if(closeAdvanced && advancedPanel){
+ closeAdvanced.onclick=()=>advancedPanel.style.display='none';
+}
 
 if(verifyAdvanced){
  verifyAdvanced.onclick=()=>{
@@ -916,9 +927,11 @@ if(verifyAdvanced){
 }
 
 function setMode(full){
- fullSwitch.checked=full;
- rangeSwitch.checked=!full;
- dateBox.style.display=full?'none':'block';
+ if(fullSwitch && rangeSwitch && dateBox){
+   fullSwitch.checked=full;
+   rangeSwitch.checked=!full;
+   dateBox.style.display=full?'none':'block';
+ }
 }
 
 if(fullSwitch) fullSwitch.onchange=()=>setMode(true);
@@ -949,12 +962,11 @@ if(excelDownload){
        +'&fin='+encodeURIComponent(fin);
   }
 
-  window.open(url,'_blank');
-
-  const panel=document.getElementById('advancedPanel');
-  if(panel) panel.style.display='none';
+  window.location.href=url;
  };
 }
+
+});
 
 let resizeTimer=null;
 function redrawSoon(){
