@@ -837,7 +837,7 @@ if(resetData) resetData.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
-    '¿Reiniciar la toma de datos de '+nombre+'?\n\n'+
+    '¿Reiniciar la toma de datos de '+nombre+'?'+
     'La gráfica y los cálculos visibles comenzarán desde cero. '+
     'Los registros históricos NO se eliminarán de la base de datos.'
   );
@@ -865,7 +865,7 @@ if(deleteAll) deleteAll.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
-    '¿Estás seguro de eliminar todo el registro?\n\n'+
+    '¿Estás seguro de eliminar todo el registro?'+
     'Se eliminará permanentemente TODO el historial de '+nombre+'. '+
     'Esta acción no se puede deshacer.'
   );
@@ -904,10 +904,14 @@ if(closeAdvanced){ closeAdvanced.onclick=()=>advancedPanel.style.display='none';
 
 if(verifyAdvanced){
  verifyAdvanced.onclick=()=>{
-   if(advancedKey.value.length===4){
+   const key = advancedKey.value.trim();
+
+   if(key.length===4){
      document.getElementById('advancedLogin').style.display='none';
      document.getElementById('advancedOptions').style.display='block';
-   }else alert('Ingrese una clave válida de 4 dígitos');
+   }else{
+     alert('Ingrese una clave válida de 4 dígitos');
+   }
  };
 }
 
@@ -922,15 +926,33 @@ if(rangeSwitch) rangeSwitch.onchange=()=>setMode(false);
 
 if(excelDownload){
  excelDownload.onclick=()=>{
-  if(!selected)return alert('No hay mascota seleccionada');
+  if(!selected){
+    alert('No hay mascota seleccionada');
+    return;
+  }
+
+  let url='';
+
   if(fullSwitch.checked){
-    location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo';
+    url='/api/excel/'+encodeURIComponent(selected)+'?escala=todo';
   }else{
     const ini=document.getElementById('dateStart').value;
     const fin=document.getElementById('dateEnd').value;
-    if(!ini||!fin)return alert('Seleccione fechas');
-    location.href='/api/excel_fecha/'+encodeURIComponent(selected)+'?inicio='+ini+'&fin='+fin;
+
+    if(!ini || !fin){
+      alert('Seleccione fecha inicial y fecha final');
+      return;
+    }
+
+    url='/api/excel_fecha/'+encodeURIComponent(selected)
+       +'?inicio='+encodeURIComponent(ini)
+       +'&fin='+encodeURIComponent(fin);
   }
+
+  window.open(url,'_blank');
+
+  const panel=document.getElementById('advancedPanel');
+  if(panel) panel.style.display='none';
  };
 }
 
@@ -947,34 +969,6 @@ setInterval(()=>{if(selected){updateCurrent();updateStats();updateChart(false);}
 loadPets().catch(console.error);
 })();
 
-// V2.2.2 OPCIONES AVANZADAS
-document.addEventListener('DOMContentLoaded',()=>{
- const adv=document.getElementById('advancedBtn');
- const panel=document.getElementById('advancedPanel');
- const closeAdv=document.getElementById('closeAdvanced');
- const verifyAdv=document.getElementById('verifyAdvanced');
-
- if(adv && panel){
-   adv.onclick=()=>panel.style.display='flex';
- }
-
- if(closeAdv && panel){
-   closeAdv.onclick=()=>panel.style.display='none';
- }
-
- if(verifyAdv){
-   verifyAdv.onclick=()=>{
-     const key=document.getElementById('advancedKey').value.trim();
-
-     if(key.length===4){
-        document.getElementById('advancedMenu').style.display='block';
-        document.querySelectorAll('.advanced-only').forEach(e=>e.style.display='flex');
-     }else{
-        alert('Ingrese una clave válida de 4 dígitos');
-     }
-   };
- }
-});
 
 </script>
 
