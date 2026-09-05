@@ -1615,7 +1615,10 @@ def verificar_mascota():
         m=db.query(Mascota).filter(Mascota.mascota_id==pet_id).first()
         if not m:
             return jsonify(ok=False)
-        cfg=db.query(Configuracion).first()\n        if cfg and not cfg.solicitar_clave_usuario:\n            return jsonify(ok=True)\n        return jsonify(ok=(hash_clave(clave)==m.clave_hash))
+        cfg=db.query(Configuracion).first()
+        if cfg and not cfg.solicitar_clave_usuario:
+            return jsonify(ok=True)
+        return jsonify(ok=(hash_clave(clave)==m.clave_hash))
 
 @app.post("/api/master/verificar")
 def master_verificar():
