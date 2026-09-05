@@ -823,9 +823,7 @@ if(resetData) resetData.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
-    '¿Reiniciar la toma de datos de '+nombre+'?
-
-'+
+    '¿Reiniciar la toma de datos de '+nombre+'?\n\n'+
     'La gráfica y los cálculos visibles comenzarán desde cero. '+
     'Los registros históricos NO se eliminarán de la base de datos.'
   );
