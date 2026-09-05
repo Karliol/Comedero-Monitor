@@ -958,73 +958,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 
-// ===== V2.2.8 EXCEL FINAL =====
-(function(){
 
-function initExcel(){
-
-const excelBtn=document.getElementById("downloadExcelBtn");
-const modal=document.getElementById("excelModal");
-const close=document.getElementById("closeExcelModal");
-const sw=document.getElementById("excelModeSwitch");
-const dates=document.getElementById("dateSelector");
-const btn=document.getElementById("confirmExcelDownload");
-
-if(!excelBtn || !modal) return;
-
-excelBtn.onclick=function(){
-    modal.style.display="flex";
-};
-
-close.onclick=function(){
-    modal.style.display="none";
-};
-
-window.onclick=function(e){
-    if(e.target===modal) modal.style.display="none";
-};
-
-sw.onchange=function(){
-    dates.style.display=this.checked ? "block" : "none";
-};
-
-btn.onclick=function(){
-
-    if(typeof selected==="undefined" || !selected){
-        alert("Seleccione una mascota");
-        return;
-    }
-
-    let url="/api/excel/"+encodeURIComponent(selected);
-
-    if(sw.checked){
-
-        let inicio=document.getElementById("excelStart").value;
-        let fin=document.getElementById("excelEnd").value;
-
-        if(!inicio || !fin){
-            alert("Seleccione fecha inicial y final");
-            return;
-        }
-
-        url += "?inicio="+inicio+"&fin="+fin;
-
-    }else{
-
-        url += "?escala=todo";
-
-    }
-
-    window.location.assign(url);
-};
-
-}
-
-document.addEventListener("DOMContentLoaded",initExcel);
-
-})();
-
-</script>
 
 <div id="advancedPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:999;">
 <div style="background:white;padding:25px;border-radius:15px;text-align:center;min-width:320px;position:relative;">
@@ -1065,30 +999,37 @@ document.addEventListener("DOMContentLoaded",initExcel);
 </div>
 
 
-<div id="excelModal" class="modal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
-<div class="modal-content" style="background:#fff;padding:30px;border-radius:18px;width:380px;position:relative;text-align:center;">
-<span id="closeExcelModal" style="position:absolute;right:18px;top:12px;font-size:25px;cursor:pointer;">✕</span>
+
+
+
+<div id="excelModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+<div style="background:white;border-radius:18px;padding:25px;width:360px;position:relative;">
+<button id="closeExcelModal" style="position:absolute;right:15px;top:10px;border:0;background:none;font-size:22px;cursor:pointer;">×</button>
 <h2>📥 Descargar Excel</h2>
 
-<div style="margin:20px 0;">
-<label style="display:flex;justify-content:center;gap:12px;align-items:center;">
-<input type="checkbox" id="excelModeSwitch">
-<span>Descargar por intervalo de fechas</span>
+<label>
+<input type="radio" name="excelType" id="excelAll" checked>
+ Historial completo
 </label>
-</div>
+<br><br>
 
-<div id="dateSelector" style="display:none;text-align:left;">
+<label>
+<input type="radio" name="excelType" id="excelRange">
+ Intervalo de fechas
+</label>
+
+<div id="rangeBox" style="display:none;margin-top:20px;">
 <label>Fecha inicial</label>
-<input type="date" id="excelStart" style="width:100%;padding:8px;"><br><br>
+<input type="date" id="excelStart" style="width:100%;">
+
+<br><br>
 
 <label>Fecha final</label>
-<input type="date" id="excelEnd" style="width:100%;padding:8px;">
+<input type="date" id="excelEnd" style="width:100%;">
 </div>
 
-<button id="confirmExcelDownload" style="margin-top:20px;padding:10px 25px;">
-Descargar
-</button>
-
+<br>
+<button id="excelDownloadConfirm">Descargar</button>
 </div>
 </div>
 
@@ -1396,3 +1337,59 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+<script>
+// ===== V2.2.11 EXCEL REBUILD =====
+document.addEventListener("DOMContentLoaded",()=>{
+
+const open=document.getElementById("downloadExcelBtn");
+const modal=document.getElementById("excelModal");
+const close=document.getElementById("closeExcelModal");
+const all=document.getElementById("excelAll");
+const range=document.getElementById("excelRange");
+const box=document.getElementById("rangeBox");
+const btn=document.getElementById("excelDownloadConfirm");
+
+if(open) open.onclick=()=>modal.style.display="flex";
+if(close) close.onclick=()=>modal.style.display="none";
+
+if(range){
+ range.onchange=()=>box.style.display="block";
+}
+if(all){
+ all.onchange=()=>box.style.display="none";
+}
+
+if(btn){
+ btn.onclick=async()=>{
+
+   if(typeof selected==="undefined" || !selected){
+      alert("Seleccione una mascota");
+      return;
+   }
+
+   let url="/api/excel/"+selected;
+
+   if(range.checked){
+      let a=document.getElementById("excelStart").value;
+      let b=document.getElementById("excelEnd").value;
+
+      if(!a || !b){
+        alert("Seleccione fechas");
+        return;
+      }
+
+      url+="?inicio="+a+"&fin="+b;
+
+   }else{
+      url+="?escala=todo";
+   }
+
+   console.log(url);
+
+   window.location.href=url;
+ };
+}
+
+});
+</script>
