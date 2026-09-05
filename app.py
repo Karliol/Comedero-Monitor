@@ -4,12 +4,12 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from zoneinfo import ZoneInfo
 
-from flask import Flask, request, jsonify, send_file, Response
+from flask import Flask, request, jsonify, send_file, Response\nimport hashlib
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, select
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Boolean, select
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 APP_TZ = ZoneInfo("America/Lima")
@@ -53,6 +53,52 @@ class ReinicioSesion(Base):
     fecha_hora = Column(DateTime, nullable=False)
 
 Base.metadata.create_all(engine)
+
+class Mascota(Base):
+    __tablename__ = "mascotas"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mascota_id = Column(String(60), unique=True, nullable=False, index=True)
+    nombre = Column(String(100), nullable=False)
+    clave_hash = Column(String(255), nullable=False)
+    visible = Column(Boolean, default=True)
+    fecha_creacion = Column(DateTime, nullable=False)
+
+
+class Administrador(Base):
+    __tablename__ = "administrador"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    clave_maestra_hash = Column(String(255), nullable=False)
+
+
+def hash_clave(clave):
+    return hashlib.sha256(str(clave).encode()).hexdigest()
+
+
+def inicializar_plataforma():
+    with SessionLocal() as db:
+        pet = db.execute(
+            select(Mascota).where(Mascota.mascota_id == "mascota01")
+        ).scalar_one_or_none()
+
+        if pet is None:
+            db.add(Mascota(
+                mascota_id="mascota01",
+                nombre="Bimbolete",
+                clave_hash=hash_clave("1234"),
+                visible=True,
+                fecha_creacion=now_lima()
+            ))
+
+        admin = db.execute(select(Administrador)).scalar_one_or_none()
+        if admin is None:
+            db.add(Administrador(
+                clave_maestra_hash=hash_clave("9999")
+            ))
+
+        db.commit()
+
 
 app = Flask(__name__)
 
@@ -812,6 +858,20 @@ def receive_weight():
     timestamp = parse_client_datetime(d.get("fecha_hora"))
 
     with SessionLocal() as db:
+        pet = db.execute(
+            select(Mascota).where(Mascota.mascota_id == pet_id)
+        ).scalar_one_or_none()
+
+        if pet is None:
+            db.add(Mascota(
+                mascota_id=pet_id,
+                nombre=name,
+                clave_hash=hash_clave("1234"),
+                visible=True,
+                fecha_creacion=now_lima()
+            ))
+            db.commit()
+
         # Evita duplicar una medición si el ESP32 la reintenta después de
         # que el servidor ya la guardó pero la respuesta HTTP se perdió.
         existing = db.execute(
@@ -842,18 +902,14 @@ def receive_weight():
 def pets():
     with SessionLocal() as db:
         rows = db.execute(
-            select(Medicion).order_by(Medicion.id.desc())
+            select(Mascota).where(Mascota.visible == True)
+            .order_by(Mascota.nombre.asc())
         ).scalars().all()
 
-    seen = set()
-    result = []
-    for r in rows:
-        if r.mascota_id not in seen:
-            seen.add(r.mascota_id)
-            result.append({"id": r.mascota_id, "nombre": r.nombre})
-
-    result.sort(key=lambda x: x["nombre"].lower())
-    return jsonify(result)
+    return jsonify([
+        {"id": r.mascota_id, "nombre": r.nombre}
+        for r in rows
+    ])
 
 @app.get("/api/ultimo/<pet_id>")
 def latest(pet_id):
@@ -1052,6 +1108,6 @@ def excel(pet_id):
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-if __name__ == "__main__":
+inicializar_plataforma()\n\nif __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
