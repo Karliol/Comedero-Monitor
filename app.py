@@ -1153,17 +1153,19 @@ window.editarMascota=async(id,nombre)=>{
  const nuevo=prompt("Nuevo nombre:",nombre);
  if(!nuevo)return;
  const clave=prompt("Nueva clave de 4 dígitos (dejar vacío para mantener):");
- await fetch("/api/master/editar/"+id,{
+ const r=await fetch("/api/master/editar/"+id,{
   method:"PUT",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({nombre:nuevo,clave:clave||""})
  });
+ if(!r.ok){ alert("No se pudo editar"); return; }
  cargarMaestro();
 };
 
 window.eliminarMascota=async(id,nombre)=>{
  if(!confirm("¿Eliminar definitivamente "+nombre+"?")) return;
- await fetch("/api/master/eliminar/"+id,{method:"DELETE"});
+ const r=await fetch("/api/master/eliminar/"+id,{method:"DELETE"});
+ if(!r.ok){ alert("No se pudo eliminar"); return; }
  cargarMaestro();
 };
 
