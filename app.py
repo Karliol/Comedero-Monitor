@@ -1,4 +1,3 @@
-
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -53,7 +52,7 @@ class ReinicioSesion(Base):
     mascota_id = Column(String(60), nullable=False, unique=True, index=True)
     fecha_hora = Column(DateTime, nullable=False)
 
-Base.metadata.create_all(engine)
+# Base.metadata.create_all movido después de los modelos
 
 class Mascota(Base):
     __tablename__ = "mascotas"
@@ -75,6 +74,9 @@ class Administrador(Base):
 
 def hash_clave(clave):
     return hashlib.sha256(str(clave).encode()).hexdigest()
+
+
+Base.metadata.create_all(engine)
 
 
 def inicializar_plataforma():
