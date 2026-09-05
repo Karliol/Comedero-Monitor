@@ -176,7 +176,7 @@ def valid_api_key():
 
 HTML = r"""<!doctype html>
 <html lang="es">
-<head>
+<head>\n<!-- Comedero IoT V2.1.1 limpio -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
 <title>Monitoreo de alimentación</title>
@@ -1184,3 +1184,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
