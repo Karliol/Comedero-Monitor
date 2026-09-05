@@ -817,10 +817,13 @@ document.querySelectorAll('.range').forEach(b=>b.addEventListener('click',()=>{
   view=null;
   updateChart(true);
 }));
+const resetData=document.getElementById('resetData');
+const deleteAll=document.getElementById('deleteAll');
+
 const refreshBtn=document.getElementById('refresh');
 if(refreshBtn) refreshBtn.addEventListener('click',()=>updateAll(false));
 
-if(resetData) if(resetData) resetData.addEventListener('click',async()=>{
+if(resetData) resetData.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
@@ -1181,5 +1184,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
-
