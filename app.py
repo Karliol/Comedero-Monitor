@@ -993,17 +993,31 @@ def receive_weight():
 def pets():
     with SessionLocal() as db:
         rows = db.execute(
-            select(Mascota).where(Mascota.visible == True)
-            .order_by(Mascota.nombre.asc())
+            select(Mascota).where(
+                Mascota.visible == True,
+                Mascota.mascota_id == "gato01"
+            )
         ).scalars().all()
 
-    vistos=set()
-    mascotas=[]
-    for r in rows:
-        clave=(r.nombre.strip().lower())
-        if clave not in vistos:
-            vistos.add(clave)
-            mascotas.append({"id": r.mascota_id, "nombre": r.nombre})
+        return [
+            {
+                "id": r.mascota_id,
+                "nombre": r.nombre
+            }
+            for r in rows
+        ]
+
+
+resultado = {}
+for m in mascotas:
+    nombre = m["nombre"].strip().lower()
+    if nombre not in resultado or m["mediciones"] > resultado[nombre]["mediciones"]:
+        resultado[nombre] = m
+
+mascotas = [
+    {"id": m["id"], "nombre": m["nombre"]}
+    for m in resultado.values()
+]
 
     return jsonify(mascotas)
 
@@ -1209,4 +1223,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
