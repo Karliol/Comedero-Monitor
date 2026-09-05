@@ -871,7 +871,8 @@ if(resetZoom) resetZoom.addEventListener('click',resetView);
 const masterMode=document.getElementById('masterMode');
 if(masterMode){
   masterMode.addEventListener('click',()=>{
-    alert('Modo maestro será habilitado en la versión V2.3');
+    const modal=document.getElementById('masterModal');
+    if(modal) modal.style.display='flex';
   });
 }
 
@@ -1111,32 +1112,41 @@ loadPets().catch(console.error);
 
 // ===== V2.3 MODO MAESTRO =====
 document.addEventListener("DOMContentLoaded",()=>{
-const btn=document.getElementById("masterMode");
 const modal=document.getElementById("masterModal");
 const close=document.getElementById("closeMaster");
 const enter=document.getElementById("masterEnter");
+const save=document.getElementById("masterSave");
 
-if(btn) btn.onclick=()=>modal.style.display="flex";
-if(close) close.onclick=()=>modal.style.display="none";
+if(close) close.onclick=()=>{modal.style.display="none";};
 
-if(enter){
- enter.onclick=async()=>{
-   const clave=document.getElementById("masterKey").value;
-   const r=await fetch("/api/master/verificar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clave})});
-   const j=await r.json();
-   if(!j.ok){alert("Clave incorrecta");return;}
-   document.getElementById("masterLogin").style.display="none";
-   document.getElementById("masterPanel").style.display="block";
-
-   const res=await fetch("/api/master/mascotas");
-   const pets=await res.json();
-   document.getElementById("masterList").innerHTML=pets.map(p=>
-   `<div class="masterRow">
-   🐱 ${p.nombre}<br>ID: ${p.mascota_id}<br>
-   Estado: ${p.visible?"Visible":"Oculta"}
-   </div>`).join("");
- };
+async function cargarMaestro(){
+ const res=await fetch("/api/master/mascotas");
+ const pets=await res.json();
+ document.getElementById("masterList").innerHTML=pets.map(p=>`
+ <div class="masterRow">
+ 🐱 <b>${p.nombre}</b><br>
+ ID: ${p.mascota_id}<br>
+ Estado: ${p.visible?"Visible 🟢":"Oculta 🔴"}<br>
+ <button class="action" onclick="toggleMascota(${p.id})">${p.visible?'Ocultar':'Mostrar'}</button>
+ <button class="action">Editar</button>
+ <button class="action danger">Eliminar</button>
+ </div>`).join("");
 }
+window.toggleMascota=async(id)=>{
+ await fetch('/api/master/visible/'+id,{method:'POST'});
+ cargarMaestro();
+};
+
+if(enter) enter.onclick=async()=>{
+ const clave=document.getElementById("masterKey").value;
+ const r=await fetch("/api/master/verificar",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clave})});
+ const j=await r.json();
+ if(!j.ok){alert("Clave incorrecta");return;}
+ document.getElementById("masterLogin").style.display="none";
+ document.getElementById("masterPanel").style.display="block";
+ cargarMaestro();
+};
+if(save) save.onclick=()=>{modal.style.display="none";};
 });
 </script>
 
@@ -1213,7 +1223,8 @@ Descargar
 <div id="masterPanel" style="display:none">
 <h3>Mascotas registradas</h3>
 <div id="masterList"></div>
-<button class="action primary">＋ AGREGAR MASCOTA</button>
+<button id="addPet" class="action primary">＋ AGREGAR MASCOTA</button>
+<button id="masterSave" class="action">GUARDAR Y SALIR</button>
 </div>
 
 </div>
