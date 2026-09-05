@@ -407,6 +407,8 @@ canvas{
 </div>
 <div id="empty" class="empty" hidden>No hay mediciones en esta escala de tiempo.</div>
 
+
+
 <div class="actions" style="justify-content:center;margin-top:18px">
 <button id="advancedBtn" class="action">⚙ OPCIONES AVANZADAS</button>
 </div>
@@ -835,7 +837,7 @@ if(resetData) resetData.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
-    '¿Reiniciar la toma de datos de '+nombre+'?'+
+    '¿Reiniciar la toma de datos de '+nombre+'?\n\n'+
     'La gráfica y los cálculos visibles comenzarán desde cero. '+
     'Los registros históricos NO se eliminarán de la base de datos.'
   );
@@ -863,7 +865,7 @@ if(deleteAll) deleteAll.addEventListener('click',async()=>{
   if(!selected)return;
   const nombre=selected||'esta mascota';
   const ok=confirm(
-    '¿Estás seguro de eliminar todo el registro?'+
+    '¿Estás seguro de eliminar todo el registro?\n\n'+
     'Se eliminará permanentemente TODO el historial de '+nombre+'. '+
     'Esta acción no se puede deshacer.'
   );
@@ -887,10 +889,50 @@ if(deleteAll) deleteAll.addEventListener('click',async()=>{
   }
 });
 
-const excelRange=document.getElementById('excelRange');
-if(excelRange) excelRange.addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala='+scale;});
-const excelAll=document.getElementById('excelAll');
-if(excelAll) excelAll.addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo'});
+const advancedBtn=document.getElementById('advancedBtn');
+const advancedPanel=document.getElementById('advancedPanel');
+const closeAdvanced=document.getElementById('closeAdvanced');
+const verifyAdvanced=document.getElementById('verifyAdvanced');
+const advancedKey=document.getElementById('advancedKey');
+const excelDownload=document.getElementById('excelDownload');
+const fullSwitch=document.getElementById('fullSwitch');
+const rangeSwitch=document.getElementById('rangeSwitch');
+const dateBox=document.getElementById('dateBox');
+
+if(advancedBtn){ advancedBtn.onclick=()=>{advancedPanel.style.display='flex';advancedKey.value='';}; }
+if(closeAdvanced){ closeAdvanced.onclick=()=>advancedPanel.style.display='none'; }
+
+if(verifyAdvanced){
+ verifyAdvanced.onclick=()=>{
+   if(advancedKey.value.length===4){
+     document.getElementById('advancedLogin').style.display='none';
+     document.getElementById('advancedOptions').style.display='block';
+   }else alert('Ingrese una clave válida de 4 dígitos');
+ };
+}
+
+function setMode(full){
+ fullSwitch.checked=full;
+ rangeSwitch.checked=!full;
+ dateBox.style.display=full?'none':'block';
+}
+
+if(fullSwitch) fullSwitch.onchange=()=>setMode(true);
+if(rangeSwitch) rangeSwitch.onchange=()=>setMode(false);
+
+if(excelDownload){
+ excelDownload.onclick=()=>{
+  if(!selected)return alert('No hay mascota seleccionada');
+  if(fullSwitch.checked){
+    location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo';
+  }else{
+    const ini=document.getElementById('dateStart').value;
+    const fin=document.getElementById('dateEnd').value;
+    if(!ini||!fin)return alert('Seleccione fechas');
+    location.href='/api/excel_fecha/'+encodeURIComponent(selected)+'?inicio='+ini+'&fin='+fin;
+  }
+ };
+}
 
 let resizeTimer=null;
 function redrawSoon(){
@@ -909,127 +951,56 @@ loadPets().catch(console.error);
 document.addEventListener('DOMContentLoaded',()=>{
  const adv=document.getElementById('advancedBtn');
  const panel=document.getElementById('advancedPanel');
- const close=document.getElementById('closeAdvancedX');
- const verify=document.getElementById('verifyAdvanced');
- const login=document.getElementById('advancedLogin');
- const menu=document.getElementById('advancedMenu');
+ const closeAdv=document.getElementById('closeAdvanced');
+ const verifyAdv=document.getElementById('verifyAdvanced');
 
- if(adv) adv.onclick=()=>panel.style.display='flex';
- if(close) close.onclick=()=>panel.style.display='none';
-
- if(verify){
-   verify.onclick=()=>{
-     const key=document.getElementById('advancedKey').value.trim();
-     if(key.length===4){
-       login.style.display='none';
-       menu.style.display='block';
-     }else{
-       alert('Ingrese una clave válida de 4 dígitos');
-     }
-   };
+ if(adv && panel){
+   adv.onclick=()=>panel.style.display='flex';
  }
 
- const excelBtn=document.getElementById('downloadExcelBtn');
- const excelPanel=document.getElementById('excelPanel');
- const closeExcel=document.getElementById('closeExcelX');
- const allMode=document.getElementById('excelAllMode');
- const rangeMode=document.getElementById('excelRangeMode');
- const dates=document.getElementById('dateSelector');
+ if(closeAdv && panel){
+   closeAdv.onclick=()=>panel.style.display='none';
+ }
 
- if(excelBtn) excelBtn.onclick=()=>excelPanel.style.display='flex';
- if(closeExcel) closeExcel.onclick=()=>excelPanel.style.display='none';
- if(allMode) allMode.onchange=()=>dates.style.display='none';
- if(rangeMode) rangeMode.onchange=()=>dates.style.display='block';
+ if(verifyAdv){
+   verifyAdv.onclick=()=>{
+     const key=document.getElementById('advancedKey').value.trim();
 
- const confirmExcel=document.getElementById('confirmExcelDownload');
- if(confirmExcel){
-   confirmExcel.onclick=()=>{
-     if(!selected)return;
-     if(allMode.checked){
-       location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo';
+     if(key.length===4){
+        document.getElementById('advancedMenu').style.display='block';
+        document.querySelectorAll('.advanced-only').forEach(e=>e.style.display='flex');
      }else{
-       const ini=document.getElementById('dateStart').value;
-       const fin=document.getElementById('dateEnd').value;
-       if(!ini || !fin){alert('Seleccione ambas fechas');return;}
-       location.href='/api/excel/'+encodeURIComponent(selected)+'?inicio='+ini+'&fin='+fin;
+        alert('Ingrese una clave válida de 4 dígitos');
      }
    };
  }
 });
 
+</script>
 
+<div id="advancedPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:999;">
+<div style="background:white;padding:25px;border-radius:18px;width:min(420px,90%);position:relative;">
+<button id="closeAdvanced" style="position:absolute;right:15px;top:10px;border:0;background:none;font-size:25px;">×</button>
 
-
-<div id="advancedPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:999;">
-<div style="background:white;padding:25px;border-radius:15px;text-align:center;min-width:320px;position:relative;">
-<button id="closeAdvancedX" style="position:absolute;right:10px;top:5px;border:0;background:none;font-size:22px;">✕</button>
-<h3>⚙ Opciones avanzadas</h3>
 <div id="advancedLogin">
+<h3>⚙ Opciones avanzadas</h3>
 <p>Ingrese clave de 4 dígitos</p>
 <input id="advancedKey" maxlength="4" type="password">
-<br><br>
-<button id="verifyAdvanced">Ingresar</button>
-</div>
-<div id="advancedMenu" style="display:none;margin-top:15px;">
-<hr>
-<button id="downloadExcelBtn">📥 Descargar Excel</button>
-<button>🔄 Reiniciar toma de datos</button>
-<button>🗑 Eliminar historial completo</button>
-<button>🔑 Cambiar clave</button>
-</div>
-</div>
+<br><br><button id="verifyAdvanced" class="action">Ingresar</button>
 </div>
 
-<div id="excelPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:1000;">
-<div style="background:white;padding:25px;border-radius:15px;text-align:center;min-width:350px;position:relative;">
-<button id="closeExcelX" style="position:absolute;right:10px;top:5px;border:0;background:none;font-size:22px;">✕</button>
+<div id="advancedOptions" style="display:none;">
 <h3>📥 Descargar Excel</h3>
-<label><input type="radio" id="excelAllMode" name="excelMode" checked> Todo el historial</label><br><br>
-<label><input type="radio" id="excelRangeMode" name="excelMode"> Intervalo de fechas</label>
-<div id="dateSelector" style="display:none;margin-top:15px;">
-<p>Fecha inicio</p><input type="date" id="dateStart">
-<p>Fecha fin</p><input type="date" id="dateEnd">
-</div>
-<br>
-<button id="confirmExcelDownload">Descargar</button>
-</div>
+<label><input id="fullSwitch" type="radio" name="mode" checked> Registro completo</label><br>
+<label><input id="rangeSwitch" type="radio" name="mode"> Intervalo de fechas</label>
+
+<div id="dateBox" style="display:none;margin-top:15px;">
+<p>Fecha inicial:</p><input id="dateStart" type="date">
+<p>Fecha final:</p><input id="dateEnd" type="date">
 </div>
 
-
+<br><button id="excelDownload" class="action primary">Descargar</button>
 </div>
-
-
-
-
-
-<div id="excelModal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
-<div style="background:white;border-radius:18px;padding:25px;width:360px;position:relative;">
-<button id="closeExcelModal" style="position:absolute;right:15px;top:10px;border:0;background:none;font-size:22px;cursor:pointer;">×</button>
-<h2>📥 Descargar Excel</h2>
-
-<label>
-<input type="radio" name="excelType" id="excelAll" checked>
- Historial completo
-</label>
-<br><br>
-
-<label>
-<input type="radio" name="excelType" id="excelRange">
- Intervalo de fechas
-</label>
-
-<div id="rangeBox" style="display:none;margin-top:20px;">
-<label>Fecha inicial</label>
-<input type="date" id="excelStart" style="width:100%;">
-
-<br><br>
-
-<label>Fecha final</label>
-<input type="date" id="excelEnd" style="width:100%;">
-</div>
-
-<br>
-<button id="excelDownloadConfirm">Descargar</button>
 </div>
 </div>
 
@@ -1259,20 +1230,10 @@ def reset_session(pet_id):
 @app.get("/api/excel/<pet_id>")
 def excel(pet_id):
     scale = request.args.get("escala", "todo")
-    inicio = request.args.get("inicio")
-    fin = request.args.get("fin")
 
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
-        if inicio and fin:
-            try:
-                desde = datetime.strptime(inicio, "%Y-%m-%d")
-                hasta = datetime.strptime(fin, "%Y-%m-%d") + timedelta(days=1)
-                stmt = stmt.where(Medicion.fecha_hora >= desde)
-                stmt = stmt.where(Medicion.fecha_hora < hasta)
-            except ValueError:
-                pass
-        elif scale != "todo":
+        if scale != "todo":
             start = visible_start(pet_id, scale=scale)
             if start:
                 stmt = stmt.where(Medicion.fecha_hora >= start)
@@ -1331,6 +1292,44 @@ def excel(pet_id):
         download_name=filename,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+@app.get("/api/excel_fecha/<pet_id>")
+def excel_fecha(pet_id):
+    inicio=request.args.get("inicio")
+    fin=request.args.get("fin")
+    try:
+        ini=datetime.strptime(inicio,"%Y-%m-%d")
+        fin_dt=datetime.strptime(fin,"%Y-%m-%d")+timedelta(days=1)
+    except:
+        return Response("Fechas inválidas",status=400)
+
+    with SessionLocal() as db:
+        rows=db.execute(
+            select(Medicion)
+            .where(Medicion.mascota_id==pet_id)
+            .where(Medicion.fecha_hora>=ini)
+            .where(Medicion.fecha_hora<fin_dt)
+            .order_by(Medicion.fecha_hora.asc())
+        ).scalars().all()
+
+    if not rows:
+        return Response("No hay datos",status=404)
+
+    wb=Workbook()
+    ws=wb.active
+    ws.append(["Mascota","Fecha","Hora","Peso alimento (g)"])
+    for r in rows:
+        ws.append([r.nombre,r.fecha_hora.strftime("%d/%m/%Y"),r.fecha_hora.strftime("%H:%M:%S"),r.peso])
+
+    f=BytesIO()
+    wb.save(f)
+    f.seek(0)
+
+    return send_file(f,as_attachment=True,
+        download_name=f"{pet_id}_rango.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 
 inicializar_plataforma()
 
