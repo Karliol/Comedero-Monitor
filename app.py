@@ -181,7 +181,9 @@ def valid_api_key():
 
 HTML = r"""<!doctype html>
 <html lang="es">
-<head>\n<!-- Comedero IoT V2.1.1 limpio -->
+<head>
+<!-- V2.2 OPCIONES AVANZADAS -->
+<!-- Comedero IoT V2.1.1 limpio -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
 <title>Monitoreo de alimentación</title>
@@ -916,7 +918,50 @@ if(window.visualViewport)window.visualViewport.addEventListener('resize',redrawS
 setInterval(()=>{if(selected){updateCurrent();updateStats();updateChart(false);}else loadPets();},10000);
 loadPets().catch(console.error);
 })();
+
+// V2.2 OPCIONES AVANZADAS
+const adv=document.getElementById('advancedBtn');
+const panel=document.getElementById('advancedPanel');
+const closeAdv=document.getElementById('closeAdvanced');
+const verifyAdv=document.getElementById('verifyAdvanced');
+
+if(adv){
+ adv.onclick=()=>panel.style.display='flex';
+}
+if(closeAdv){
+ closeAdv.onclick=()=>panel.style.display='none';
+}
+if(verifyAdv){
+ verifyAdv.onclick=()=>{
+   const key=document.getElementById('advancedKey').value;
+   if(key.length===4){
+      document.getElementById('advancedMenu').style.display='block';
+   }else{
+      alert('Ingrese una clave válida de 4 dígitos');
+   }
+ };
+}
+
 </script>
+
+<div id="advancedPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:999;">
+<div style="background:white;padding:25px;border-radius:15px;text-align:center;">
+<h3>⚙ Opciones avanzadas</h3>
+<p>Ingrese clave de 4 dígitos</p>
+<input id="advancedKey" maxlength="4" type="password">
+<br><br>
+<button id="verifyAdvanced">Ingresar</button>
+<button id="closeAdvanced">Cancelar</button>
+<div id="advancedMenu" style="display:none;margin-top:15px;">
+<hr>
+<button>📥 Descargar Excel</button>
+<button>🔄 Reiniciar toma de datos</button>
+<button>🗑 Eliminar historial completo</button>
+<button>🔑 Cambiar clave</button>
+</div>
+</div>
+</div>
+
 </body>
 </html>"""
 
