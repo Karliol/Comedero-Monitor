@@ -795,7 +795,7 @@ canvas.addEventListener('click',ev=>{
   if(best)placeTip(best); else hideTip();
 });
 
-resetZoom.addEventListener('click',resetView);
+if(resetZoom) resetZoom.addEventListener('click',resetView);
 
 const masterMode=document.getElementById('masterMode');
 if(masterMode){
@@ -817,7 +817,8 @@ document.querySelectorAll('.range').forEach(b=>b.addEventListener('click',()=>{
   view=null;
   updateChart(true);
 }));
-document.getElementById('refresh').addEventListener('click',()=>updateAll(false));
+const refreshBtn=document.getElementById('refresh');
+if(refreshBtn) refreshBtn.addEventListener('click',()=>updateAll(false));
 
 if(resetData) resetData.addEventListener('click',async()=>{
   if(!selected)return;
@@ -875,8 +876,10 @@ if(deleteAll) deleteAll.addEventListener('click',async()=>{
   }
 });
 
-document.getElementById('excelRange').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala='+scale;});
-document.getElementById('excelAll').addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo'});
+const excelRange=document.getElementById('excelRange');
+if(excelRange) excelRange.addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala='+scale;});
+const excelAll=document.getElementById('excelAll');
+if(excelAll) excelAll.addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo'});
 
 let resizeTimer=null;
 function redrawSoon(){
