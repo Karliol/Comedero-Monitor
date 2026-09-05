@@ -407,11 +407,6 @@ canvas{
 </div>
 <div id="empty" class="empty" hidden>No hay mediciones en esta escala de tiempo.</div>
 
-<div class="actions advanced-only" style="display:none;">
-<button id="excelRange" class="action">📥 Excel de la escala visible</button>
-<button id="excelAll" class="action primary">📥 Excel completo de la mascota</button>
-</div>
-
 <div class="actions" style="justify-content:center;margin-top:18px">
 <button id="advancedBtn" class="action">⚙ OPCIONES AVANZADAS</button>
 </div>
@@ -897,16 +892,6 @@ if(excelRange) excelRange.addEventListener('click',()=>{if(selected)location.hre
 const excelAll=document.getElementById('excelAll');
 if(excelAll) excelAll.addEventListener('click',()=>{if(selected)location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo'});
 
-const advancedBtn=document.getElementById('advancedBtn');
-if(advancedBtn){
-  advancedBtn.addEventListener('click',()=>{
-    const clave=prompt('Ingrese clave de 4 dígitos');
-    if(clave){
-      document.getElementById('advancedMenu').style.display='block';
-    }
-  });
-}
-
 let resizeTimer=null;
 function redrawSoon(){
   clearTimeout(resizeTimer);
@@ -924,48 +909,87 @@ loadPets().catch(console.error);
 document.addEventListener('DOMContentLoaded',()=>{
  const adv=document.getElementById('advancedBtn');
  const panel=document.getElementById('advancedPanel');
- const closeAdv=document.getElementById('closeAdvanced');
- const verifyAdv=document.getElementById('verifyAdvanced');
+ const close=document.getElementById('closeAdvancedX');
+ const verify=document.getElementById('verifyAdvanced');
+ const login=document.getElementById('advancedLogin');
+ const menu=document.getElementById('advancedMenu');
 
- if(adv && panel){
-   adv.onclick=()=>panel.style.display='flex';
- }
+ if(adv) adv.onclick=()=>panel.style.display='flex';
+ if(close) close.onclick=()=>panel.style.display='none';
 
- if(closeAdv && panel){
-   closeAdv.onclick=()=>panel.style.display='none';
- }
-
- if(verifyAdv){
-   verifyAdv.onclick=()=>{
+ if(verify){
+   verify.onclick=()=>{
      const key=document.getElementById('advancedKey').value.trim();
-
      if(key.length===4){
-        document.getElementById('advancedMenu').style.display='block';
-        document.querySelectorAll('.advanced-only').forEach(e=>e.style.display='flex');
+       login.style.display='none';
+       menu.style.display='block';
      }else{
-        alert('Ingrese una clave válida de 4 dígitos');
+       alert('Ingrese una clave válida de 4 dígitos');
+     }
+   };
+ }
+
+ const excelBtn=document.getElementById('downloadExcelBtn');
+ const excelPanel=document.getElementById('excelPanel');
+ const closeExcel=document.getElementById('closeExcelX');
+ const allMode=document.getElementById('excelAllMode');
+ const rangeMode=document.getElementById('excelRangeMode');
+ const dates=document.getElementById('dateSelector');
+
+ if(excelBtn) excelBtn.onclick=()=>excelPanel.style.display='flex';
+ if(closeExcel) closeExcel.onclick=()=>excelPanel.style.display='none';
+ if(allMode) allMode.onchange=()=>dates.style.display='none';
+ if(rangeMode) rangeMode.onchange=()=>dates.style.display='block';
+
+ const confirmExcel=document.getElementById('confirmExcelDownload');
+ if(confirmExcel){
+   confirmExcel.onclick=()=>{
+     if(!selected)return;
+     if(allMode.checked){
+       location.href='/api/excel/'+encodeURIComponent(selected)+'?escala=todo';
+     }else{
+       const ini=document.getElementById('dateStart').value;
+       const fin=document.getElementById('dateEnd').value;
+       if(!ini || !fin){alert('Seleccione ambas fechas');return;}
+       location.href='/api/excel/'+encodeURIComponent(selected)+'?inicio='+ini+'&fin='+fin;
      }
    };
  }
 });
-
 </script>
 
 <div id="advancedPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:999;">
-<div style="background:white;padding:25px;border-radius:15px;text-align:center;">
+<div style="background:white;padding:25px;border-radius:15px;text-align:center;min-width:320px;position:relative;">
+<button id="closeAdvancedX" style="position:absolute;right:10px;top:5px;border:0;background:none;font-size:22px;">✕</button>
 <h3>⚙ Opciones avanzadas</h3>
+<div id="advancedLogin">
 <p>Ingrese clave de 4 dígitos</p>
 <input id="advancedKey" maxlength="4" type="password">
 <br><br>
 <button id="verifyAdvanced">Ingresar</button>
-<button id="closeAdvanced">Cancelar</button>
+</div>
 <div id="advancedMenu" style="display:none;margin-top:15px;">
 <hr>
-<button>📥 Descargar Excel</button>
+<button id="downloadExcelBtn">📥 Descargar Excel</button>
 <button>🔄 Reiniciar toma de datos</button>
 <button>🗑 Eliminar historial completo</button>
 <button>🔑 Cambiar clave</button>
 </div>
+</div>
+</div>
+
+<div id="excelPanel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:center;justify-content:center;z-index:1000;">
+<div style="background:white;padding:25px;border-radius:15px;text-align:center;min-width:350px;position:relative;">
+<button id="closeExcelX" style="position:absolute;right:10px;top:5px;border:0;background:none;font-size:22px;">✕</button>
+<h3>📥 Descargar Excel</h3>
+<label><input type="radio" id="excelAllMode" name="excelMode" checked> Todo el historial</label><br><br>
+<label><input type="radio" id="excelRangeMode" name="excelMode"> Intervalo de fechas</label>
+<div id="dateSelector" style="display:none;margin-top:15px;">
+<p>Fecha inicio</p><input type="date" id="dateStart">
+<p>Fecha fin</p><input type="date" id="dateEnd">
+</div>
+<br>
+<button id="confirmExcelDownload">Descargar</button>
 </div>
 </div>
 
@@ -1195,10 +1219,20 @@ def reset_session(pet_id):
 @app.get("/api/excel/<pet_id>")
 def excel(pet_id):
     scale = request.args.get("escala", "todo")
+    inicio = request.args.get("inicio")
+    fin = request.args.get("fin")
 
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
-        if scale != "todo":
+        if inicio and fin:
+            try:
+                desde = datetime.strptime(inicio, "%Y-%m-%d")
+                hasta = datetime.strptime(fin, "%Y-%m-%d") + timedelta(days=1)
+                stmt = stmt.where(Medicion.fecha_hora >= desde)
+                stmt = stmt.where(Medicion.fecha_hora < hasta)
+            except ValueError:
+                pass
+        elif scale != "todo":
             start = visible_start(pet_id, scale=scale)
             if start:
                 stmt = stmt.where(Medicion.fecha_hora >= start)
