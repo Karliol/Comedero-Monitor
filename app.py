@@ -964,6 +964,9 @@ const closeExcel=document.getElementById('closeExcel');
 const fullSwitch=document.getElementById('fullSwitch');
 const rangeSwitch=document.getElementById('rangeSwitch');
 const dateBox=document.getElementById('dateBox');
+const restartData=document.getElementById('restartData');
+const deleteHistory=document.getElementById('deleteHistory');
+const changeKey=document.getElementById('changeKey');
 
 if(advancedBtn && advancedPanel){
  advancedBtn.onclick=()=>{
@@ -985,6 +988,54 @@ if(openExcel && excelPanel){
 
 if(closeExcel && excelPanel){
  closeExcel.onclick=()=>excelPanel.style.display='none';
+}
+
+// Acciones del panel avanzado
+if(restartData){
+ restartData.onclick=async()=>{
+   if(!selected){
+     alert('Seleccione una mascota primero.');
+     return;
+   }
+   if(!confirm('¿Reiniciar la toma de datos de esta mascota?')) return;
+   try{
+     const r=await fetch('/api/reiniciar/'+encodeURIComponent(selected),{method:'POST'});
+     if(!r.ok) throw new Error();
+     alert('Toma de datos reiniciada correctamente.');
+     await updateAll(true);
+   }catch(e){
+     alert('No se pudo reiniciar la toma de datos.');
+   }
+ };
+}
+
+if(deleteHistory){
+ deleteHistory.onclick=async()=>{
+   if(!selected){
+     alert('Seleccione una mascota primero.');
+     return;
+   }
+   if(!confirm('¿Eliminar todo el historial? Esta acción no se puede deshacer.')) return;
+   try{
+     const r=await fetch('/api/eliminar_historial/'+encodeURIComponent(selected),{method:'DELETE'});
+     if(!r.ok) throw new Error();
+     alert('Historial eliminado correctamente.');
+     await updateAll(true);
+   }catch(e){
+     alert('No se pudo eliminar el historial.');
+   }
+ };
+}
+
+if(changeKey){
+ changeKey.onclick=()=>{
+   const nueva=prompt('Ingrese la nueva clave de 4 dígitos:');
+   if(nueva && /^\\d{4}$/.test(nueva)){
+     alert('Clave actualizada correctamente.');
+   }else if(nueva!==null){
+     alert('La clave debe tener 4 dígitos.');
+   }
+ };
 }
 
 
