@@ -567,18 +567,40 @@ async function loadPets(){
     b.className='pet-choice';
     b.textContent='🐱 '+x.nombre;
     b.onclick=async()=>{
-      const clave=prompt("Ingrese clave de 4 dígitos:");
-      if(clave===null)return;
+      let necesitaClave=true;
+
+      try{
+        const cfg=await fetch("/api/master/config").then(r=>r.json());
+        necesitaClave=!!cfg.solicitar_clave;
+      }catch(e){
+        necesitaClave=true;
+      }
+
+      let clave="";
+
+      if(necesitaClave){
+        clave=prompt("Ingrese clave de 4 dígitos:");
+        if(clave===null)return;
+
+        if(!/^\\d{4}$/.test(clave.trim())){
+          alert("Ingrese una clave válida de 4 dígitos");
+          return;
+        }
+      }
+
       const r=await fetch("/api/mascota/verificar",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({mascota_id:x.id,clave})
       });
+
       const j=await r.json();
+
       if(!j.ok){
         alert("Clave incorrecta");
         return;
       }
+
       selected=x.id;
       selectScreen.classList.add('hidden-view');
       dashboard.classList.remove('hidden-view');
