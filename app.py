@@ -555,7 +555,19 @@ async function loadPets(){
     const b=document.createElement('button');
     b.className='pet-choice';
     b.textContent='🐱 '+x.nombre;
-    b.onclick=()=>{
+    b.onclick=async()=>{
+      const clave=prompt("Ingrese clave de 4 dígitos:");
+      if(clave===null)return;
+      const r=await fetch("/api/mascota/verificar",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({mascota_id:x.id,clave})
+      });
+      const j=await r.json();
+      if(!j.ok){
+        alert("Clave incorrecta");
+        return;
+      }
       selected=x.id;
       selectScreen.classList.add('hidden-view');
       dashboard.classList.remove('hidden-view');
@@ -981,7 +993,14 @@ if(advancedBtn && advancedPanel){
 }
 
 if(closeAdvanced && advancedPanel){
- closeAdvanced.onclick=()=>advancedPanel.style.display='none';
+ closeAdvanced.onclick=()=>{
+   advancedPanel.style.display='none';
+   const l=document.getElementById('advancedLogin');
+   const o=document.getElementById('advancedOptions');
+   if(l)l.style.display='block';
+   if(o)o.style.display='none';
+   if(advancedKey)advancedKey.value='';
+ };
 }
 
 if(openExcel && excelPanel){
@@ -1190,6 +1209,7 @@ if(addPet) addPet.onclick=async()=>{
  const j=await r.json();
  if(!j.ok) alert(j.mensaje||"Error");
  cargarMaestro();
+ await getj('/api/mascotas').then(()=>loadPets());
 };
 
 if(enter) enter.onclick=async()=>{
@@ -1410,7 +1430,7 @@ def pets():
         rows = db.execute(
             select(Mascota).where(
                 Mascota.visible == True,
-                Mascota.mascota_id == "gato01"
+                Mascota.mascota_id != "mascota01"
             )
         ).scalars().all()
 
@@ -1555,6 +1575,17 @@ def reset_session(pet_id):
 
     return jsonify(estado="ok", mensaje="Toma de datos reiniciada", fecha_hora=fmt_dt(timestamp))
 
+
+@app.post("/api/mascota/verificar")
+def verificar_mascota():
+    data=request.get_json() or {}
+    pet_id=str(data.get("mascota_id", ""))
+    clave=str(data.get("clave", ""))
+    with SessionLocal() as db:
+        m=db.query(Mascota).filter(Mascota.mascota_id==pet_id).first()
+        if not m:
+            return jsonify(ok=False)
+        return jsonify(ok=(hash_clave(clave)==m.clave_hash))
 
 @app.post("/api/master/verificar")
 def master_verificar():
