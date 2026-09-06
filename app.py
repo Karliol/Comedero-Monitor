@@ -595,6 +595,12 @@ function baseView(){
 function resetView(){
   view=baseView();
   hideTip();
+  // V2.4: al cambiar de fecha la vista debe regresar al día completo
+  // seleccionado y no conservar el desplazamiento anterior.
+  if(typeof baseView === "function"){
+      view = baseView();
+  }
+
   draw(points);
 }
 
@@ -888,16 +894,31 @@ canvas.addEventListener('mousemove',ev=>{
 canvas.addEventListener('mouseleave',()=>{if(!dragging)hideTip();});
 
 function clampView(){
-  if(!view)return;
-  const bx=baseView();
-  if(!bx)return;
-  const minXSpan=Math.max(1000,(bx.x1-bx.x0)/200);
-  const minYSpan=Math.max(0.2,bx.y1/500);
-  if(view.x1-view.x0<minXSpan)view.x1=view.x0+minXSpan;
-  if(view.y1-view.y0<minYSpan)view.y1=view.y0+minYSpan;
-  // Permitimos desplazamiento, pero evitamos perder completamente la zona de datos.
-  const padX=(bx.x1-bx.x0)*0.5;
-  if(view.x1<bx.x0-padX){const d=(bx.x0-padX)-view.x1;view.x0+=d;view.x1+=d;}
+  if(!view) return;
+
+  const fecha = document.getElementById("fechaGraficaV24")?.value;
+
+  if(fecha){
+    const inicio = new Date(fecha+"T00:00:00").getTime();
+    const fin = new Date(fecha+"T23:59:59").getTime();
+
+    const ancho = view.x1 - view.x0;
+
+    if(view.x0 < inicio){
+      view.x0 = inicio;
+      view.x1 = inicio + ancho;
+    }
+
+    if(view.x1 > fin){
+      view.x1 = fin;
+      view.x0 = fin - ancho;
+    }
+
+    if(view.x0 < inicio){
+      view.x0 = inicio;
+    }
+  }
+}
   if(view.x0>bx.x1+padX){const d=view.x0-(bx.x1+padX);view.x0-=d;view.x1-=d;}
   // El peso físico no puede ser negativo. El eje vertical se limita
   // estrictamente a Y >= 0 incluso al hacer zoom o arrastrar.
