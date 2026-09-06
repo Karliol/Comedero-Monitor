@@ -729,10 +729,38 @@ function resetVistaDiaV24(){
   }
 }
 
+
+function aplicarLimitesDiaV24(){
+  if(!view) return;
+
+  const fecha = document.getElementById("fechaGraficaV24")?.value;
+  if(!fecha) return;
+
+  const inicio = new Date(fecha+"T00:00:00").getTime();
+  const fin = new Date(fecha+"T23:59:59").getTime();
+
+  const ancho = view.x1 - view.x0;
+
+  if(view.x0 < inicio){
+      view.x0 = inicio;
+      view.x1 = inicio + ancho;
+  }
+
+  if(view.x1 > fin){
+      view.x1 = fin;
+      view.x0 = fin - ancho;
+  }
+}
+
 async function updateChart(forceReset=false){
   if(!selected){points=[];view=null;draw([]);return;}
 
   let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+encodeURIComponent(scale);
+
+  const fechaDiaV24 = document.getElementById("fechaGraficaV24");
+  if(fechaDiaV24 && fechaDiaV24.value){
+      url += "&modo=dia&fecha=" + encodeURIComponent(fechaDiaV24.value);
+  }
 
   const fechaSel=document.getElementById("fechaGraficaV24");
   const modoSel=document.getElementById("modoGraficaV24");
