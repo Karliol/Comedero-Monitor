@@ -1,4 +1,3 @@
-
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -668,6 +667,45 @@ const escalaGraficaV24 = document.getElementById("escalaGraficaV24");
 
 if(fechaGraficaV24){
   fechaGraficaV24.value = new Date().toISOString().split("T")[0];
+}
+
+let modoV24 = "dia";
+let fechaV24 = fechaGraficaV24 ? fechaGraficaV24.value : "";
+let escalaV24 = "24h";
+
+async function cargarGraficaV24(){
+  if(!selected) return;
+
+  modoV24 = modoGraficaV24 ? modoGraficaV24.value : "dia";
+  fechaV24 = fechaGraficaV24 ? fechaGraficaV24.value : "";
+  escalaV24 = escalaGraficaV24 ? escalaGraficaV24.value : "24h";
+
+  let url = "/api/historico/" + encodeURIComponent(selected)
+          + "?escala=" + encodeURIComponent(escalaV24);
+
+  if(modoV24 === "dia" && fechaV24){
+      url += "&modo=dia&fecha=" + encodeURIComponent(fechaV24);
+  }
+
+  const d = await getj(url);
+
+  points = d.fechas.map((f,i)=>({
+      t: parseLocal(f),
+      raw:f,
+      y:Number(d.pesos[i])
+  })).filter(q=>q.t && Number.isFinite(q.y));
+
+  draw(points);
+}
+
+if(modoGraficaV24){
+  modoGraficaV24.addEventListener("change", cargarGraficaV24);
+}
+if(fechaGraficaV24){
+  fechaGraficaV24.addEventListener("change", cargarGraficaV24);
+}
+if(escalaGraficaV24){
+  escalaGraficaV24.addEventListener("change", cargarGraficaV24);
 }
 
 async function updateChart(forceReset=false){
@@ -1951,4 +1989,5 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
 
