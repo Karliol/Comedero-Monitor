@@ -478,33 +478,6 @@ margin:10px 0;
 </div>
 
 <div class="chart-wrap" id="chartWrap">
-
-<div id="graficaControlesV24" style="margin:10px 0;padding:10px;border-radius:10px;">
-  <label>
-    Visualización:
-    <select id="modoGraficaV24">
-      <option value="dia">Día</option>
-      <option value="rango">Intervalo de días</option>
-    </select>
-  </label>
-
-  <label style="margin-left:10px;">
-    Fecha:
-    <input type="date" id="fechaGraficaV24">
-  </label>
-
-  <label style="margin-left:10px;">
-    Escala:
-    <select id="escalaGraficaV24">
-      <option value="24h">24 horas</option>
-      <option value="12h">12 horas</option>
-      <option value="6h">6 horas</option>
-      <option value="3h">3 horas</option>
-      <option value="1h">1 hora</option>
-    </select>
-  </label>
-</div>
-
 <canvas id="chart"></canvas>
 <div id="tip" class="tip"></div>
 </div>
@@ -660,78 +633,24 @@ async function updateStats(){
   lastc.textContent=Number(d.ultimo_consumo||0).toFixed(1)+' g';
 }
 
-
-// V2.4 - controles iniciales de gráfica temporal
-const modoGraficaV24 = document.getElementById("modoGraficaV24");
-const fechaGraficaV24 = document.getElementById("fechaGraficaV24");
-const escalaGraficaV24 = document.getElementById("escalaGraficaV24");
-
-if(fechaGraficaV24){
-  fechaGraficaV24.value = new Date().toISOString().split("T")[0];
-}
-
-let modoV24 = "dia";
-let fechaV24 = fechaGraficaV24 ? fechaGraficaV24.value : "";
-let escalaV24 = "24h";
-
-async function cargarGraficaV24(){
-  if(!selected) return;
-
-  modoV24 = modoGraficaV24 ? modoGraficaV24.value : "dia";
-  fechaV24 = fechaGraficaV24 ? fechaGraficaV24.value : "";
-  escalaV24 = escalaGraficaV24 ? escalaGraficaV24.value : "24h";
-
-  let url = "/api/historico/" + encodeURIComponent(selected)
-          + "?escala=" + encodeURIComponent(escalaV24);
-
-  // V2.4: la fecha seleccionada debe ser enviada siempre
-  // para evitar cargar el histórico completo.
-  if(modoV24 === "dia" && fechaV24){
-      url += "&modo=dia&fecha=" + encodeURIComponent(fechaV24);
-  }
-
-  const d = await getj(url);
-
-  // Evitar conservar datos de una fecha anterior
-  points = [];
-
-  points = d.fechas.map((f,i)=>({
-      t: parseLocal(f),
-      raw:f,
-      y:Number(d.pesos[i])
-  })).filter(q=>q.t && Number.isFinite(q.y));
-
-  // V2.4: cuando se selecciona un día, la escala de 24h
-  // debe conservar siempre el eje completo desde 00:00 hasta 23:59.
-  // Los espacios sin datos quedan vacíos.
-  if(modoV24 === "dia" && escalaV24 === "24h" && fechaV24){
-      const diaInicio = new Date(fechaV24 + "T00:00:00");
-      const diaFin = new Date(fechaV24 + "T23:59:59");
-
-      if(typeof view !== "undefined"){
-          view = {
-              min: diaInicio,
-              max: diaFin
-          };
-      }
-  }
-
-  draw(points);
-}
-
-if(modoGraficaV24){
-  modoGraficaV24.addEventListener("change", cargarGraficaV24);
-}
-if(fechaGraficaV24){
-  fechaGraficaV24.addEventListener("change", cargarGraficaV24);
-}
-if(escalaGraficaV24){
-  escalaGraficaV24.addEventListener("change", cargarGraficaV24);
-}
-
 async function updateChart(forceReset=false){
   if(!selected){points=[];view=null;draw([]);return;}
-  const d=await getj('/api/historico/'+encodeURIComponent(selected)+'?escala='+scale);
+
+  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+scale;
+
+  // V2.4: usar únicamente el día seleccionado si existe el selector.
+  const fechaSel=document.getElementById('fechaGraficaV24');
+  const modoSel=document.getElementById('modoGraficaV24');
+
+  if(fechaSel && fechaSel.value && (!modoSel || modoSel.value==='dia')){
+    url += '&modo=dia&fecha='+encodeURIComponent(fechaSel.value);
+  }
+
+  const d=await getj(url);
+
+  // Limpiar completamente la serie anterior antes de cargar una nueva fecha.
+  points=[];
+
   points=d.fechas.map((f,i)=>({t:parseLocal(f),raw:f,y:Number(d.pesos[i])})).filter(q=>q.t && Number.isFinite(q.y));
   sessionMax=Number(d.maximo_sesion||0);
   if(forceReset || !view){
@@ -1637,13 +1556,33 @@ def latest(pet_id):
 @app.get("/api/historico/<pet_id>")
 def history(pet_id):
     scale = request.args.get("escala", "24h")
-    start = visible_start(pet_id, scale=scale)
+
+    modo = request.args.get("modo")
+    fecha = request.args.get("fecha")
+
+    start = None
+    end = None
+
+    if modo == "dia" and fecha:
+        try:
+            start = datetime.strptime(fecha, "%Y-%m-%d")
+            end = start.replace(hour=23, minute=59, second=59)
+        except ValueError:
+            start = None
+
+    if start is None:
+        start = visible_start(pet_id, scale=scale)
+
     session_start = get_reset_time(pet_id)
 
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
         if start:
             stmt = stmt.where(Medicion.fecha_hora >= start)
+
+        if end:
+            stmt = stmt.where(Medicion.fecha_hora <= end)
+
         rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
         max_stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
