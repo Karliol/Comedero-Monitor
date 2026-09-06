@@ -1541,13 +1541,50 @@ def latest(pet_id):
 @app.get("/api/historico/<pet_id>")
 def history(pet_id):
     scale = request.args.get("escala", "24h")
-    start = visible_start(pet_id, scale=scale)
+    modo = request.args.get("modo", "actual")
+
+    # Nuevo modo V2.4:
+    # dia: muestra únicamente el día seleccionado (00:00 - 23:59)
+    # rango: muestra un intervalo completo de fechas
+    start = None
+    end = None
+
+    if modo == "dia":
+        fecha = request.args.get("fecha")
+        if fecha:
+            try:
+                start = datetime.strptime(fecha, "%Y-%m-%d")
+                end = start.replace(hour=23, minute=59, second=59)
+            except ValueError:
+                pass
+
+    elif modo == "rango":
+        desde = request.args.get("desde")
+        hasta = request.args.get("hasta")
+        if desde and hasta:
+            try:
+                start = datetime.strptime(desde, "%Y-%m-%d")
+                end = datetime.strptime(hasta, "%Y-%m-%d").replace(
+                    hour=23, minute=59, second=59
+                )
+            except ValueError:
+                pass
+
+    # Mantiene el comportamiento anterior si no se usa el nuevo modo
+    if start is None:
+        start = visible_start(pet_id, scale=scale)
+
     session_start = get_reset_time(pet_id)
 
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
+
         if start:
             stmt = stmt.where(Medicion.fecha_hora >= start)
+
+        if end:
+            stmt = stmt.where(Medicion.fecha_hora <= end)
+
         rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
         max_stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
@@ -1914,3 +1951,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
