@@ -565,42 +565,19 @@ function niceCeil(v){
 }
 
 function baseView(){
-  // V2.4: el eje X representa un día completo, no solamente
-  // el rango donde existen muestras.
-  if(!points.length && !fechaGraficaV24.value)return null;
-
-  let x0;
-  let x1;
-
-  const fecha = fechaGraficaV24 ? fechaGraficaV24.value : "";
-
-  if(fecha){
-    const inicio = new Date(fecha + "T00:00:00");
-    const fin = new Date(fecha + "T23:59:59");
-    x0 = inicio.getTime();
-    x1 = fin.getTime();
-  }else{
-    const ts=points.map(q=>q.t.getTime());
-    x0=Math.min(...ts);
-    x1=Math.max(...ts);
-  }
-
+  if(!points.length)return null;
+  const ts=points.map(q=>q.t.getTime());
+  let x0=Math.min(...ts),x1=Math.max(...ts);
+  if(x0===x1){x0-=30000;x1+=30000;}
   const maxMeasured=Math.max(sessionMax,...points.map(q=>q.y),1);
   const margin=Math.max(5,maxMeasured*0.10);
   const y1=niceCeil(maxMeasured+margin);
-
   return {x0,x1,y0:0,y1};
 }
 
 function resetView(){
   view=baseView();
   hideTip();
-  // V2.4: al cambiar de fecha la vista debe regresar al día completo
-  // seleccionado y no conservar el desplazamiento anterior.
-  if(typeof baseView === "function"){
-      view = baseView();
-  }
-
   draw(points);
 }
 
@@ -726,26 +703,29 @@ if(modoGraficaV24){
   modoGraficaV24.addEventListener("change", cargarGraficaV24);
 }
 if(fechaGraficaV24){
-  fechaGraficaV24.addEventListener("change", cargarGraficaV24);
+  fechaGraficaV24.addEventListener("change", ()=>{
+      resetVistaDiaV24();
+      cargarGraficaV24();
+  });
 }
 if(escalaGraficaV24){
   escalaGraficaV24.addEventListener("change", cargarGraficaV24);
 }
 
+
+// V2.4: reinicia la cámara de la gráfica al cambiar de fecha
+function resetVistaDiaV24(){
+  if(typeof baseView === "function"){
+      view = baseView();
+  }
+  if(typeof clampView === "function"){
+      clampView();
+  }
+}
+
 async function updateChart(forceReset=false){
   if(!selected){points=[];view=null;draw([]);return;}
-  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+scale;
-
-  const fechaSel=document.getElementById('fechaGraficaV24');
-  const modoSel=document.getElementById('modoGraficaV24');
-
-  if(fechaSel && fechaSel.value && (!modoSel || modoSel.value==='dia')){
-      url += '&modo=dia&fecha='+encodeURIComponent(fechaSel.value);
-  }
-
-  const d=await getj(url);
-  points=[];
-
+  const d=await getj('/api/historico/'+encodeURIComponent(selected)+'?escala='+scale);
   points=d.fechas.map((f,i)=>({t:parseLocal(f),raw:f,y:Number(d.pesos[i])})).filter(q=>q.t && Number.isFinite(q.y));
   sessionMax=Number(d.maximo_sesion||0);
   if(forceReset || !view){
@@ -894,31 +874,16 @@ canvas.addEventListener('mousemove',ev=>{
 canvas.addEventListener('mouseleave',()=>{if(!dragging)hideTip();});
 
 function clampView(){
-  if(!view) return;
-
-  const fecha = document.getElementById("fechaGraficaV24")?.value;
-
-  if(fecha){
-    const inicio = new Date(fecha+"T00:00:00").getTime();
-    const fin = new Date(fecha+"T23:59:59").getTime();
-
-    const ancho = view.x1 - view.x0;
-
-    if(view.x0 < inicio){
-      view.x0 = inicio;
-      view.x1 = inicio + ancho;
-    }
-
-    if(view.x1 > fin){
-      view.x1 = fin;
-      view.x0 = fin - ancho;
-    }
-
-    if(view.x0 < inicio){
-      view.x0 = inicio;
-    }
-  }
-}
+  if(!view)return;
+  const bx=baseView();
+  if(!bx)return;
+  const minXSpan=Math.max(1000,(bx.x1-bx.x0)/200);
+  const minYSpan=Math.max(0.2,bx.y1/500);
+  if(view.x1-view.x0<minXSpan)view.x1=view.x0+minXSpan;
+  if(view.y1-view.y0<minYSpan)view.y1=view.y0+minYSpan;
+  // Permitimos desplazamiento, pero evitamos perder completamente la zona de datos.
+  const padX=(bx.x1-bx.x0)*0.5;
+  if(view.x1<bx.x0-padX){const d=(bx.x0-padX)-view.x1;view.x0+=d;view.x1+=d;}
   if(view.x0>bx.x1+padX){const d=view.x0-(bx.x1+padX);view.x0-=d;view.x1-=d;}
   // El peso físico no puede ser negativo. El eje vertical se limita
   // estrictamente a Y >= 0 incluso al hacer zoom o arrastrar.
@@ -1666,32 +1631,13 @@ def latest(pet_id):
 @app.get("/api/historico/<pet_id>")
 def history(pet_id):
     scale = request.args.get("escala", "24h")
-
-    modo = request.args.get("modo")
-    fecha = request.args.get("fecha")
-
-    start = None
-    end = None
-
-    if modo == "dia" and fecha:
-        try:
-            start = datetime.strptime(fecha, "%Y-%m-%d")
-            end = start.replace(hour=23, minute=59, second=59)
-        except ValueError:
-            start = None
-
-    if start is None:
-        start = visible_start(pet_id, scale=scale)
+    start = visible_start(pet_id, scale=scale)
     session_start = get_reset_time(pet_id)
 
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
         if start:
             stmt = stmt.where(Medicion.fecha_hora >= start)
-
-        if end:
-            stmt = stmt.where(Medicion.fecha_hora <= end)
-
         rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
         max_stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
