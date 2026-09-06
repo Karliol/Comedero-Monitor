@@ -478,6 +478,33 @@ margin:10px 0;
 </div>
 
 <div class="chart-wrap" id="chartWrap">
+
+<div id="graficaControlesV24" style="margin:10px 0;padding:10px;border-radius:10px;">
+  <label>
+    Visualización:
+    <select id="modoGraficaV24">
+      <option value="dia">Día</option>
+      <option value="rango">Intervalo de días</option>
+    </select>
+  </label>
+
+  <label style="margin-left:10px;">
+    Fecha:
+    <input type="date" id="fechaGraficaV24">
+  </label>
+
+  <label style="margin-left:10px;">
+    Escala:
+    <select id="escalaGraficaV24">
+      <option value="24h">24 horas</option>
+      <option value="12h">12 horas</option>
+      <option value="6h">6 horas</option>
+      <option value="3h">3 horas</option>
+      <option value="1h">1 hora</option>
+    </select>
+  </label>
+</div>
+
 <canvas id="chart"></canvas>
 <div id="tip" class="tip"></div>
 </div>
@@ -631,6 +658,16 @@ async function updateStats(){
   const d=await getj('/api/estadisticas/'+encodeURIComponent(selected));
   today.textContent=Number(d.consumo_hoy||0).toFixed(1)+' g';
   lastc.textContent=Number(d.ultimo_consumo||0).toFixed(1)+' g';
+}
+
+
+// V2.4 - controles iniciales de gráfica temporal
+const modoGraficaV24 = document.getElementById("modoGraficaV24");
+const fechaGraficaV24 = document.getElementById("fechaGraficaV24");
+const escalaGraficaV24 = document.getElementById("escalaGraficaV24");
+
+if(fechaGraficaV24){
+  fechaGraficaV24.value = new Date().toISOString().split("T")[0];
 }
 
 async function updateChart(forceReset=false){
@@ -1541,51 +1578,13 @@ def latest(pet_id):
 @app.get("/api/historico/<pet_id>")
 def history(pet_id):
     scale = request.args.get("escala", "24h")
-    modo = request.args.get("modo", "actual")
-
-    start = None
-    end = None
-
-    # V2.4 - Selección por día calendario
-    if modo == "dia":
-        fecha = request.args.get("fecha")
-        if fecha:
-            try:
-                start = datetime.strptime(fecha, "%Y-%m-%d")
-                end = start.replace(hour=23, minute=59, second=59)
-            except ValueError:
-                start = None
-                end = None
-
-    # V2.4 - Selección por intervalo de fechas
-    elif modo == "rango":
-        desde = request.args.get("desde")
-        hasta = request.args.get("hasta")
-        if desde and hasta:
-            try:
-                start = datetime.strptime(desde, "%Y-%m-%d")
-                end = datetime.strptime(hasta, "%Y-%m-%d").replace(
-                    hour=23, minute=59, second=59
-                )
-            except ValueError:
-                start = None
-                end = None
-
-    # Mantener compatibilidad con la gráfica actual
-    if start is None:
-        start = visible_start(pet_id, scale=scale)
-
+    start = visible_start(pet_id, scale=scale)
     session_start = get_reset_time(pet_id)
 
     with SessionLocal() as db:
         stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
-
         if start:
             stmt = stmt.where(Medicion.fecha_hora >= start)
-
-        if end:
-            stmt = stmt.where(Medicion.fecha_hora <= end)
-
         rows = db.execute(stmt.order_by(Medicion.fecha_hora.asc())).scalars().all()
 
         max_stmt = select(Medicion).where(Medicion.mascota_id == pet_id)
