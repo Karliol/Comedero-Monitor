@@ -684,11 +684,16 @@ async function cargarGraficaV24(){
   let url = "/api/historico/" + encodeURIComponent(selected)
           + "?escala=" + encodeURIComponent(escalaV24);
 
+  // V2.4: la fecha seleccionada debe ser enviada siempre
+  // para evitar cargar el histórico completo.
   if(modoV24 === "dia" && fechaV24){
       url += "&modo=dia&fecha=" + encodeURIComponent(fechaV24);
   }
 
   const d = await getj(url);
+
+  // Evitar conservar datos de una fecha anterior
+  points = [];
 
   points = d.fechas.map((f,i)=>({
       t: parseLocal(f),
