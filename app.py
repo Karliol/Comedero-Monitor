@@ -696,6 +696,12 @@ async function cargarGraficaV24(){
       y:Number(d.pesos[i])
   })).filter(q=>q.t && Number.isFinite(q.y));
 
+  sessionMax=Number(d.maximo_sesion||0);
+
+  if(typeof baseView === "function"){
+      view=baseView();
+  }
+
   draw(points);
 }
 
@@ -725,7 +731,19 @@ function resetVistaDiaV24(){
 
 async function updateChart(forceReset=false){
   if(!selected){points=[];view=null;draw([]);return;}
-  const d=await getj('/api/historico/'+encodeURIComponent(selected)+'?escala='+scale);
+
+  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+encodeURIComponent(scale);
+
+  const fechaSel=document.getElementById("fechaGraficaV24");
+  const modoSel=document.getElementById("modoGraficaV24");
+
+  if(fechaSel && fechaSel.value && (!modoSel || modoSel.value==="dia")){
+      url += "&modo=dia&fecha="+encodeURIComponent(fechaSel.value);
+  }
+
+  const d=await getj(url);
+
+  points=[];
   points=d.fechas.map((f,i)=>({t:parseLocal(f),raw:f,y:Number(d.pesos[i])})).filter(q=>q.t && Number.isFinite(q.y));
   sessionMax=Number(d.maximo_sesion||0);
   if(forceReset || !view){
