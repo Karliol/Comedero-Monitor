@@ -565,13 +565,30 @@ function niceCeil(v){
 }
 
 function baseView(){
-  if(!points.length)return null;
-  const ts=points.map(q=>q.t.getTime());
-  let x0=Math.min(...ts),x1=Math.max(...ts);
-  if(x0===x1){x0-=30000;x1+=30000;}
+  // V2.4: el eje X representa un día completo, no solamente
+  // el rango donde existen muestras.
+  if(!points.length && !fechaGraficaV24.value)return null;
+
+  let x0;
+  let x1;
+
+  const fecha = fechaGraficaV24 ? fechaGraficaV24.value : "";
+
+  if(fecha){
+    const inicio = new Date(fecha + "T00:00:00");
+    const fin = new Date(fecha + "T23:59:59");
+    x0 = inicio.getTime();
+    x1 = fin.getTime();
+  }else{
+    const ts=points.map(q=>q.t.getTime());
+    x0=Math.min(...ts);
+    x1=Math.max(...ts);
+  }
+
   const maxMeasured=Math.max(sessionMax,...points.map(q=>q.y),1);
   const margin=Math.max(5,maxMeasured*0.10);
   const y1=niceCeil(maxMeasured+margin);
+
   return {x0,x1,y0:0,y1};
 }
 
@@ -2020,3 +2037,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
