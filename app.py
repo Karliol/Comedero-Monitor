@@ -1543,12 +1543,10 @@ def history(pet_id):
     scale = request.args.get("escala", "24h")
     modo = request.args.get("modo", "actual")
 
-    # Nuevo modo V2.4:
-    # dia: muestra únicamente el día seleccionado (00:00 - 23:59)
-    # rango: muestra un intervalo completo de fechas
     start = None
     end = None
 
+    # V2.4 - Selección por día calendario
     if modo == "dia":
         fecha = request.args.get("fecha")
         if fecha:
@@ -1556,8 +1554,10 @@ def history(pet_id):
                 start = datetime.strptime(fecha, "%Y-%m-%d")
                 end = start.replace(hour=23, minute=59, second=59)
             except ValueError:
-                pass
+                start = None
+                end = None
 
+    # V2.4 - Selección por intervalo de fechas
     elif modo == "rango":
         desde = request.args.get("desde")
         hasta = request.args.get("hasta")
@@ -1568,9 +1568,10 @@ def history(pet_id):
                     hour=23, minute=59, second=59
                 )
             except ValueError:
-                pass
+                start = None
+                end = None
 
-    # Mantiene el comportamiento anterior si no se usa el nuevo modo
+    # Mantener compatibilidad con la gráfica actual
     if start is None:
         start = visible_start(pet_id, scale=scale)
 
