@@ -1,3 +1,4 @@
+
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -694,6 +695,21 @@ async function cargarGraficaV24(){
       raw:f,
       y:Number(d.pesos[i])
   })).filter(q=>q.t && Number.isFinite(q.y));
+
+  // V2.4: cuando se selecciona un día, la escala de 24h
+  // debe conservar siempre el eje completo desde 00:00 hasta 23:59.
+  // Los espacios sin datos quedan vacíos.
+  if(modoV24 === "dia" && escalaV24 === "24h" && fechaV24){
+      const diaInicio = new Date(fechaV24 + "T00:00:00");
+      const diaFin = new Date(fechaV24 + "T23:59:59");
+
+      if(typeof view !== "undefined"){
+          view = {
+              min: diaInicio,
+              max: diaFin
+          };
+      }
+  }
 
   draw(points);
 }
@@ -1989,5 +2005,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
-
