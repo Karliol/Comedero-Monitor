@@ -460,14 +460,7 @@ margin:10px 0;
 <section class="panel">
 <div class="panel-head">
 <h2>Evolución de la masa de alimento disponible</h2>
-<div class="ranges">
-<button class="range" data-range="1h">1 h</button>
-<button class="range" data-range="6h">6 h</button>
-<button class="range" data-range="12h">12 h</button>
-<button class="range active" data-range="24h">24 h</button>
-<button class="range" data-range="3d">3 días</button>
-<button class="range" data-range="7d">7 días</button>
-</div>
+
 </div>
 
 <div class="chart-toolbar">
@@ -493,10 +486,7 @@ margin:10px 0;
     <input type="date" id="fechaGraficaV24">
   </label>
 
-  <label style="margin-left:10px;">
-    Escala:
-    
-  </label>
+  
 </div>
 
 <canvas id="chart"></canvas>
@@ -573,6 +563,20 @@ function obtenerRangoHorasV24(){
     };
 }
 
+
+function rangoHorarioSeleccionadoV24(){
+    const fecha=document.getElementById("fechaGraficaV24")?.value;
+    const inicio=document.getElementById("horaInicioGraficaV24")?.value || "00:00";
+    const fin=document.getElementById("horaFinGraficaV24")?.value || "23:59";
+
+    if(!fecha) return null;
+
+    return {
+        inicio:new Date(fecha+"T"+inicio+":00").getTime(),
+        fin:new Date(fecha+"T"+fin+":00").getTime()
+    };
+}
+
 function baseView(){
   const fecha = document.getElementById("fechaGraficaV24")?.value;
   const rangoHorasV24 = obtenerRangoHorasV24();
@@ -580,8 +584,8 @@ function baseView(){
   let x0, x1;
 
   if(fecha){
-    x0 = rangoHorasV24 ? rangoHorasV24.min : new Date(fecha+"T00:00:00").getTime();
-    x1 = rangoHorasV24 ? rangoHorasV24.max : new Date(fecha+"T23:59:59").getTime();
+    x0 = rangoHorasV24 ? rangoHorasV24.min : rangoHorarioSeleccionadoV24()?.inicio ?? new Date(fecha+"T00:00:00").getTime();
+    x1 = rangoHorasV24 ? rangoHorasV24.max : rangoHorarioSeleccionadoV24()?.fin ?? new Date(fecha+"T23:59:59").getTime();
   }else{
     if(!points.length)return null;
     const ts=points.map(q=>q.t.getTime());
@@ -760,8 +764,8 @@ function configurarLimitesDiaFinalV24(){
     const fecha = document.getElementById("fechaGraficaV24")?.value;
     if(!fecha || typeof chart === "undefined" || !chart) return;
 
-    const inicio = new Date(fecha+"T00:00:00").getTime();
-    const fin = new Date(fecha+"T23:59:59").getTime();
+    const inicio = rangoHorarioSeleccionadoV24()?.inicio ?? new Date(fecha+"T00:00:00").getTime();
+    const fin = rangoHorarioSeleccionadoV24()?.fin ?? new Date(fecha+"T23:59:59").getTime();
 
     if(chart.options.scales && chart.options.scales.x){
         chart.options.scales.x.min = inicio;
@@ -786,8 +790,8 @@ function limitarMovimientoHorizontalDia(){
     const fecha = document.getElementById("fechaGraficaV24")?.value;
     if(!fecha) return;
 
-    const inicio = new Date(fecha+"T00:00:00").getTime();
-    const fin = new Date(fecha+"T23:59:59").getTime();
+    const inicio = rangoHorarioSeleccionadoV24()?.inicio ?? new Date(fecha+"T00:00:00").getTime();
+    const fin = rangoHorarioSeleccionadoV24()?.fin ?? new Date(fecha+"T23:59:59").getTime();
 
     const ancho = view.x1 - view.x0;
 
@@ -806,6 +810,14 @@ function limitarMovimientoHorizontalDia(){
 function actualizarRangoHorasV24(){
     view = null;
     if(typeof cargarGraficaV24 === "function"){
+        cargarGraficaV24();
+    }
+}
+
+
+function actualizarRangoHorarioV24(){
+    view=null;
+    if(typeof cargarGraficaV24==="function"){
         cargarGraficaV24();
     }
 }
@@ -2145,4 +2157,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
