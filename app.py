@@ -578,10 +578,13 @@ function rangoHorarioSeleccionadoV24(){
 }
 
 
-// Mantiene el último valor medido hasta los límites del intervalo seleccionado
-function aplicarContinuidadExtremosV24(datos){
-    const rango = rangoHorarioSeleccionadoV24();
-    if(!rango || !datos || datos.length===0) return datos;
+// Extiende la línea manteniendo el último valor medido dentro del intervalo visible
+function aplicarContinuidadExtremosSeguroV24(datos){
+    const rango = rangoHorarioSeleccionadoV24?.();
+
+    if(!rango || !datos || datos.length===0){
+        return datos;
+    }
 
     const salida = [...datos].sort((a,b)=>a.t-b.t);
 
@@ -634,7 +637,7 @@ function resetView(){
   view=baseView();
   hideTip();
   limitarMovimientoHorizontalDia();
-  points = aplicarContinuidadExtremosV24(points);
+  points = aplicarContinuidadExtremosSeguroV24(points);
   draw(points);
 }
 
@@ -848,8 +851,9 @@ function actualizarRangoHorasV24(){
 
 function actualizarRangoHorarioV24(){
     view=null;
-    cargarGraficaV24();
-}
+    if(typeof cargarGraficaV24==="function"){
+        cargarGraficaV24();
+    }
 }
 
 async function updateChart(forceReset=false){
@@ -2187,4 +2191,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
