@@ -562,11 +562,12 @@ function niceCeil(v){
 
 function actualizarIntervaloHorasV24(){
     view=null;
-    document.getElementById("horaInicioGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
+    cargarGraficaV24();
+}
+
+document.getElementById("horaInicioGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
 document.getElementById("horaFinGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
 
-cargarGraficaV24();
-}
 }
 
 function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
@@ -2192,3 +2193,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
