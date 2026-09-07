@@ -956,22 +956,39 @@ function placeTip(best){
   tip.style.top=top+'px';
 }
 
-function nearestPoint(clientX,clientY=null,maxDist=36){
+function nearestPoint(clientX,clientY=null,maxDist=8){
   if(!points.length||!canvas._geom)return null;
+
   const r=canvas.getBoundingClientRect();
-  const mx=clientX-r.left,my=clientY==null?null:clientY-r.top,G=canvas._geom;
-  let best=null,bd=Infinity;
+  const mx=clientX-r.left;
+  const my=clientY==null?null:clientY-r.top;
+  const G=canvas._geom;
+
+  let best=null;
+  let bd=Infinity;
+
   points.forEach(q=>{
-    const x=G.X(q.t),y=G.Y(q.y);
-    const d=my==null?Math.abs(x-mx):Math.hypot(x-mx,(y-my)*0.35);
-    if(d<bd){bd=d;best={q,x,y};}
+    const x=G.X(q.t);
+    const y=G.Y(q.y);
+
+    // Distancia real al punto. No reducir la componente vertical,
+    // porque permitía detectar puntos alejados de la posición del cursor.
+    const d=my==null
+      ? Math.abs(x-mx)
+      : Math.hypot(x-mx,y-my);
+
+    if(d<bd){
+      bd=d;
+      best={q,x,y};
+    }
   });
+
   return best && bd<=maxDist ? best : null;
 }
 
 canvas.addEventListener('mousemove',ev=>{
   if(dragging)return;
-  const best=nearestPoint(ev.clientX,ev.clientY,32);
+  const best=nearestPoint(ev.clientX,ev.clientY,8);
   if(best)placeTip(best); else hideTip();
 });
 canvas.addEventListener('mouseleave',()=>{if(!dragging)hideTip();});
@@ -1111,7 +1128,7 @@ canvas.addEventListener('touchend',ev=>{
     if(!dragStart.moved){
       const changed=ev.changedTouches?.[0];
       if(changed){
-        const best=nearestPoint(changed.clientX,changed.clientY,42);
+        const best=nearestPoint(changed.clientX,changed.clientY,8);
         if(best)placeTip(best); else hideTip();
       }
     }
@@ -1121,7 +1138,7 @@ canvas.addEventListener('touchend',ev=>{
 
 canvas.addEventListener('click',ev=>{
   if(ev.pointerType==='touch')return;
-  const best=nearestPoint(ev.clientX,ev.clientY,42);
+  const best=nearestPoint(ev.clientX,ev.clientY,8);
   if(best)placeTip(best); else hideTip();
 });
 
@@ -2124,3 +2141,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
