@@ -568,8 +568,6 @@ function actualizarIntervaloHorasV24(){
 document.getElementById("horaInicioGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
 document.getElementById("horaFinGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
 
-}
-
 function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
     if(!puntos || puntos.length===0) return [];
 
