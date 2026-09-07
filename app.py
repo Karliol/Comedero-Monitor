@@ -804,7 +804,32 @@ async function updateChart(forceReset=false){
   const d=await getj(url);
 
   points=[];
-  points=d.fechas.map((f,i)=>({t:parseLocal(f),raw:f,y:Number(d.pesos[i])})).filter(q=>q.t && Number.isFinite(q.y));
+  // V2.4: conservar únicamente mediciones del día seleccionado
+  const fechaFiltroV24 = document.getElementById("fechaGraficaV24")?.value;
+
+  let inicioDiaV24 = null;
+  let finDiaV24 = null;
+
+  if(fechaFiltroV24){
+      inicioDiaV24 = new Date(fechaFiltroV24+"T00:00:00").getTime();
+      finDiaV24 = new Date(fechaFiltroV24+"T23:59:59").getTime();
+  }
+
+  points=d.fechas.map((f,i)=>({
+      t:parseLocal(f),
+      raw:f,
+      y:Number(d.pesos[i])
+  }))
+  .filter(q=>{
+      if(!q.t || !Number.isFinite(q.y)) return false;
+
+      if(inicioDiaV24 && finDiaV24){
+          return q.t.getTime() >= inicioDiaV24 &&
+                 q.t.getTime() <= finDiaV24;
+      }
+
+      return true;
+  });
   sessionMax=Number(d.maximo_sesion||0);
   if(forceReset || !view){
     view=baseView();
