@@ -587,7 +587,8 @@ function aplicarContinuidadExtremosV24(datos){
     const primero=salida[0];
     const ultimo=salida[salida.length-1];
 
-    if(primero.t.getTime()>rango.inicio){
+    // Punto artificial inicial para mantener el valor del primer dato
+    if(primero.t.getTime() > rango.inicio){
         salida.unshift({
             t:new Date(rango.inicio),
             y:primero.y,
@@ -595,7 +596,8 @@ function aplicarContinuidadExtremosV24(datos){
         });
     }
 
-    if(ultimo.t.getTime()<rango.fin){
+    // Punto artificial final para mantener el valor del último dato
+    if(ultimo.t.getTime() < rango.fin){
         salida.push({
             t:new Date(rango.fin),
             y:ultimo.y,
@@ -1040,7 +1042,7 @@ function nearestPoint(clientX,clientY=null,maxDist=8){
     }
   });
 
-  return best && bd<=maxDist ? best : null;
+  return best && bd<=maxDist && !best.q.artificial ? best : null;
 }
 
 canvas.addEventListener('mousemove',ev=>{
