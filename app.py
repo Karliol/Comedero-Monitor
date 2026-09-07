@@ -494,7 +494,16 @@ margin:10px 0;
   </label>
 
   <label style="margin-left:10px;">
-    Escala:
+    
+<label>Desde:
+<input id="horaInicioGraficaV24" type="time" value="00:00">
+</label>
+
+<label>Hasta:
+<input id="horaFinGraficaV24" type="time" value="23:59">
+</label>
+
+Escala:
     <select id="escalaGraficaV24">
       <option value="24h">24 horas</option>
       <option value="12h">12 horas</option>
@@ -562,6 +571,46 @@ function niceCeil(v){
   else if(f<=5)n=5;
   else n=10;
   return n*exp;
+}
+
+
+// V2.4 - Rango horario manual y continuidad en extremos
+function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
+    if(!puntos || puntos.length===0) return [];
+
+    const inicio = new Date(
+        document.getElementById("fechaGraficaV24").value +
+        "T" + horaInicio + ":00"
+    );
+
+    const fin = new Date(
+        document.getElementById("fechaGraficaV24").value +
+        "T" + horaFin + ":00"
+    );
+
+    let salida = puntos.filter(p =>
+        p.t >= inicio && p.t <= fin
+    );
+
+    // Completar extremo izquierdo
+    if(salida.length && salida[0].t > inicio){
+        salida.unshift({
+            t: inicio,
+            y: salida[0].y,
+            artificial:true
+        });
+    }
+
+    // Completar extremo derecho
+    if(salida.length && salida[salida.length-1].t < fin){
+        salida.push({
+            t: fin,
+            y: salida[salida.length-1].y,
+            artificial:true
+        });
+    }
+
+    return salida;
 }
 
 function baseView(){
@@ -727,7 +776,11 @@ if(fechaGraficaV24){
   });
 }
 if(escalaGraficaV24){
-  escalaGraficaV24.addEventListener("change", cargarGraficaV24);
+  escalaGraficaV24.addEventListener("change", ()=>{
+      escalaV24 = escalaGraficaV24.value;
+      view = null;
+      cargarGraficaV24();
+  });
 }
 
 
@@ -792,7 +845,8 @@ function limitarMovimientoHorizontalDia(){
 async function updateChart(forceReset=false){
   if(!selected){points=[];view=null;draw([]);return;}
 
-  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+encodeURIComponent(scale);
+  let escalaActualV24 = document.getElementById("escalaGraficaV24")?.value || escalaV24 || scale;
+  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+encodeURIComponent(escalaActualV24);
 
   const fechaSel=document.getElementById("fechaGraficaV24");
   const modoSel=document.getElementById("modoGraficaV24");
@@ -1410,7 +1464,7 @@ window.addEventListener('resize',redrawSoon);
 window.addEventListener('orientationchange',()=>setTimeout(()=>draw(points),300));
 if(window.visualViewport)window.visualViewport.addEventListener('resize',redrawSoon);
 
-setInterval(()=>{if(selected){updateCurrent();updateStats();updateChart(false);}else loadPets();},10000);
+setInterval(()=>{if(selected){updateCurrent();updateStats();cargarGraficaV24();}else loadPets();},10000);
 loadPets().catch(console.error);
 })();
 
