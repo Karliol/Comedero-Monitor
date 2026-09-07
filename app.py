@@ -495,13 +495,7 @@ margin:10px 0;
 
   <label style="margin-left:10px;">
     Escala:
-    <select id="escalaGraficaV24">
-      <option value="24h">24 horas</option>
-      <option value="12h">12 horas</option>
-      <option value="6h">6 horas</option>
-      <option value="3h">3 horas</option>
-      <option value="1h">1 hora</option>
-    </select>
+    
   </label>
 </div>
 
@@ -739,7 +733,10 @@ if(modoGraficaV24){
 if(fechaGraficaV24){
   fechaGraficaV24.addEventListener("change", ()=>{
       resetVistaDiaV24();
-      cargarGraficaV24();
+      document.getElementById("horaInicioGraficaV24")?.addEventListener("change", actualizarRangoHorasV24);
+document.getElementById("horaFinGraficaV24")?.addEventListener("change", actualizarRangoHorasV24);
+
+cargarGraficaV24();
   });
 }
 if(escalaGraficaV24){
