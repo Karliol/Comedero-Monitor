@@ -565,13 +565,24 @@ function niceCeil(v){
 }
 
 function baseView(){
-  if(!points.length)return null;
-  const ts=points.map(q=>q.t.getTime());
-  let x0=Math.min(...ts),x1=Math.max(...ts);
-  if(x0===x1){x0-=30000;x1+=30000;}
+  const fecha = document.getElementById("fechaGraficaV24")?.value;
+
+  let x0, x1;
+
+  if(fecha){
+    x0 = new Date(fecha+"T00:00:00").getTime();
+    x1 = new Date(fecha+"T23:59:59").getTime();
+  }else{
+    if(!points.length)return null;
+    const ts=points.map(q=>q.t.getTime());
+    x0=Math.min(...ts);
+    x1=Math.max(...ts);
+  }
+
   const maxMeasured=Math.max(sessionMax,...points.map(q=>q.y),1);
   const margin=Math.max(5,maxMeasured*0.10);
   const y1=niceCeil(maxMeasured+margin);
+
   return {x0,x1,y0:0,y1};
 }
 
@@ -948,10 +959,27 @@ function clampView(){
   const minYSpan=Math.max(0.2,bx.y1/500);
   if(view.x1-view.x0<minXSpan)view.x1=view.x0+minXSpan;
   if(view.y1-view.y0<minYSpan)view.y1=view.y0+minYSpan;
-  // Permitimos desplazamiento, pero evitamos perder completamente la zona de datos.
-  const padX=(bx.x1-bx.x0)*0.5;
-  if(view.x1<bx.x0-padX){const d=(bx.x0-padX)-view.x1;view.x0+=d;view.x1+=d;}
-  if(view.x0>bx.x1+padX){const d=view.x0-(bx.x1+padX);view.x0-=d;view.x1-=d;}
+  // Bloqueo estricto dentro del día seleccionado
+  if(view.x0 < bx.x0){
+    const d = bx.x0 - view.x0;
+    view.x0 += d;
+    view.x1 += d;
+  }
+
+  if(view.x1 > bx.x1){
+    const d = view.x1 - bx.x1;
+    view.x0 -= d;
+    view.x1 -= d;
+  }
+
+  // Segundo ajuste por seguridad si la ventana supera completamente el día
+  if(view.x0 < bx.x0){
+    view.x0 = bx.x0;
+  }
+
+  if(view.x1 > bx.x1){
+    view.x1 = bx.x1;
+  }
   // El peso físico no puede ser negativo. El eje vertical se limita
   // estrictamente a Y >= 0 incluso al hacer zoom o arrastrar.
   if(view.y0 < 0){
