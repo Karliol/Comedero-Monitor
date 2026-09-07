@@ -562,9 +562,11 @@ function niceCeil(v){
 
 function actualizarIntervaloHorasV24(){
     view=null;
-    if(typeof cargarGraficaV24==="function"){
-        cargarGraficaV24();
-    }
+    document.getElementById("horaInicioGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
+document.getElementById("horaFinGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
+
+cargarGraficaV24();
+}
 }
 
 function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
@@ -611,8 +613,8 @@ function baseView(){
   let x0, x1;
 
   if(fecha){
-    x0 = new Date(fecha+"T00:00:00").getTime();
-    x1 = new Date(fecha+"T23:59:59").getTime();
+    x0 = new Date(fecha+"T"+horaInicio+":00").getTime();
+    x1 = new Date(fecha+"T"+horaFin+":00").getTime();
   }else{
     if(!points.length)return null;
     const ts=points.map(q=>q.t.getTime());
