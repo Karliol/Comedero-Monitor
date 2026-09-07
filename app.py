@@ -578,20 +578,16 @@ function rangoHorarioSeleccionadoV24(){
 }
 
 
-// Extiende la línea manteniendo el último valor medido dentro del intervalo visible
-function aplicarContinuidadExtremosSeguroV24(datos){
+function aplicarContinuidadExtremosV24(datos){
     const rango = rangoHorarioSeleccionadoV24?.();
+    if(!rango || !datos || datos.length===0) return datos;
 
-    if(!rango || !datos || datos.length===0){
-        return datos;
-    }
+    const salida=[...datos].sort((a,b)=>a.t-b.t);
 
-    const salida = [...datos].sort((a,b)=>a.t-b.t);
+    const primero=salida[0];
+    const ultimo=salida[salida.length-1];
 
-    const primero = salida[0];
-    const ultimo = salida[salida.length-1];
-
-    if(primero.t.getTime() > rango.inicio){
+    if(primero.t.getTime()>rango.inicio){
         salida.unshift({
             t:new Date(rango.inicio),
             y:primero.y,
@@ -599,7 +595,7 @@ function aplicarContinuidadExtremosSeguroV24(datos){
         });
     }
 
-    if(ultimo.t.getTime() < rango.fin){
+    if(ultimo.t.getTime()<rango.fin){
         salida.push({
             t:new Date(rango.fin),
             y:ultimo.y,
@@ -637,7 +633,7 @@ function resetView(){
   view=baseView();
   hideTip();
   limitarMovimientoHorizontalDia();
-  points = aplicarContinuidadExtremosSeguroV24(points);
+  points=aplicarContinuidadExtremosV24(points);
   draw(points);
 }
 
@@ -1023,16 +1019,27 @@ function placeTip(best){
   tip.style.top=top+'px';
 }
 
-function nearestPoint(clientX,clientY=null,maxDist=36){
+function nearestPoint(clientX,clientY=null,maxDist=8){
   if(!points.length||!canvas._geom)return null;
   const r=canvas.getBoundingClientRect();
-  const mx=clientX-r.left,my=clientY==null?null:clientY-r.top,G=canvas._geom;
+  const mx=clientX-r.left;
+  const my=clientY==null?null:clientY-r.top;
+  const G=canvas._geom;
+
   let best=null,bd=Infinity;
+
   points.forEach(q=>{
-    const x=G.X(q.t),y=G.Y(q.y);
-    const d=my==null?Math.abs(x-mx):Math.hypot(x-mx,(y-my)*0.35);
-    if(d<bd){bd=d;best={q,x,y};}
+    const x=G.X(q.t);
+    const y=G.Y(q.y);
+
+    const d=my==null ? Math.abs(x-mx) : Math.hypot(x-mx,y-my);
+
+    if(d<bd){
+      bd=d;
+      best={q,x,y};
+    }
   });
+
   return best && bd<=maxDist ? best : null;
 }
 
