@@ -495,15 +495,6 @@ margin:10px 0;
 <label>Hasta:
 <input id="horaFinGraficaV24" type="time" value="23:59">
 </label>
-
-Escala:
-    <select id="escalaGraficaV24">
-      <option value="24h">24 horas</option>
-      <option value="12h">12 horas</option>
-      <option value="6h">6 horas</option>
-      <option value="3h">3 horas</option>
-      <option value="1h">1 hora</option>
-    </select>
   </label>
 </div>
 
@@ -571,11 +562,9 @@ function niceCeil(v){
 
 function actualizarIntervaloHorasV24(){
     view=null;
-    
-horaInicioGraficaV24?.addEventListener("change", actualizarIntervaloHorasV24);
-horaFinGraficaV24?.addEventListener("change", actualizarIntervaloHorasV24);
-
-cargarGraficaV24();
+    if(typeof cargarGraficaV24==="function"){
+        cargarGraficaV24();
+    }
 }
 
 function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
