@@ -577,6 +577,36 @@ function rangoHorarioSeleccionadoV24(){
     };
 }
 
+
+// Mantiene el último valor medido hasta los límites del intervalo seleccionado
+function aplicarContinuidadExtremosV24(datos){
+    const rango = rangoHorarioSeleccionadoV24();
+    if(!rango || !datos || datos.length===0) return datos;
+
+    const salida = [...datos].sort((a,b)=>a.t-b.t);
+
+    const primero = salida[0];
+    const ultimo = salida[salida.length-1];
+
+    if(primero.t.getTime() > rango.inicio){
+        salida.unshift({
+            t:new Date(rango.inicio),
+            y:primero.y,
+            artificial:true
+        });
+    }
+
+    if(ultimo.t.getTime() < rango.fin){
+        salida.push({
+            t:new Date(rango.fin),
+            y:ultimo.y,
+            artificial:true
+        });
+    }
+
+    return salida;
+}
+
 function baseView(){
   const fecha = document.getElementById("fechaGraficaV24")?.value;
   const rangoHorasV24 = obtenerRangoHorasV24();
@@ -604,6 +634,7 @@ function resetView(){
   view=baseView();
   hideTip();
   limitarMovimientoHorizontalDia();
+  points = aplicarContinuidadExtremosV24(points);
   draw(points);
 }
 
@@ -817,9 +848,8 @@ function actualizarRangoHorasV24(){
 
 function actualizarRangoHorarioV24(){
     view=null;
-    if(typeof cargarGraficaV24==="function"){
-        cargarGraficaV24();
-    }
+    cargarGraficaV24();
+}
 }
 
 async function updateChart(forceReset=false){
@@ -2157,3 +2187,4 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
+
