@@ -460,7 +460,14 @@ margin:10px 0;
 <section class="panel">
 <div class="panel-head">
 <h2>Evolución de la masa de alimento disponible</h2>
-
+<div class="ranges">
+<button class="range" data-range="1h">1 h</button>
+<button class="range" data-range="6h">6 h</button>
+<button class="range" data-range="12h">12 h</button>
+<button class="range active" data-range="24h">24 h</button>
+<button class="range" data-range="3d">3 días</button>
+<button class="range" data-range="7d">7 días</button>
+</div>
 </div>
 
 <div class="chart-toolbar">
@@ -487,14 +494,14 @@ margin:10px 0;
   </label>
 
   <label style="margin-left:10px;">
-    
-<label>Desde:
-<input id="horaInicioGraficaV24" type="time" value="00:00">
-</label>
-
-<label>Hasta:
-<input id="horaFinGraficaV24" type="time" value="23:59">
-</label>
+    Escala:
+    <select id="escalaGraficaV24">
+      <option value="24h">24 horas</option>
+      <option value="12h">12 horas</option>
+      <option value="6h">6 horas</option>
+      <option value="3h">3 horas</option>
+      <option value="1h">1 hora</option>
+    </select>
   </label>
 </div>
 
@@ -558,62 +565,29 @@ function niceCeil(v){
 }
 
 
-// V2.4 - Rango horario manual y continuidad en extremos
+// Intervalo horario independiente de la carga general de la aplicación
+function obtenerRangoHorasV24(){
+    const fecha = document.getElementById("fechaGraficaV24")?.value;
+    const hi = document.getElementById("horaInicioGraficaV24")?.value || "00:00";
+    const hf = document.getElementById("horaFinGraficaV24")?.value || "23:59";
 
-function actualizarIntervaloHorasV24(){
-    view=null;
-    cargarGraficaV24();
-}
+    if(!fecha) return null;
 
-document.getElementById("horaInicioGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
-document.getElementById("horaFinGraficaV24")?.addEventListener("change", actualizarIntervaloHorasV24);
-
-function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
-    if(!puntos || puntos.length===0) return [];
-
-    const inicio = new Date(
-        document.getElementById("fechaGraficaV24").value +
-        "T" + horaInicio + ":00"
-    );
-
-    const fin = new Date(
-        document.getElementById("fechaGraficaV24").value +
-        "T" + horaFin + ":00"
-    );
-
-    let salida = puntos.filter(p =>
-        p.t >= inicio && p.t <= fin
-    );
-
-    // Completar extremo izquierdo
-    if(salida.length && salida[0].t > inicio){
-        salida.unshift({
-            t: inicio,
-            y: salida[0].y,
-            artificial:true
-        });
-    }
-
-    // Completar extremo derecho
-    if(salida.length && salida[salida.length-1].t < fin){
-        salida.push({
-            t: fin,
-            y: salida[salida.length-1].y,
-            artificial:true
-        });
-    }
-
-    return salida;
+    return {
+        min: new Date(fecha+"T"+hi+":00").getTime(),
+        max: new Date(fecha+"T"+hf+":00").getTime()
+    };
 }
 
 function baseView(){
   const fecha = document.getElementById("fechaGraficaV24")?.value;
+  const rangoHorasV24 = obtenerRangoHorasV24();
 
   let x0, x1;
 
   if(fecha){
-    x0 = new Date(fecha+"T"+horaInicio+":00").getTime();
-    x1 = new Date(fecha+"T"+horaFin+":00").getTime();
+    x0 = rangoHorasV24 ? rangoHorasV24.min : new Date(fecha+"T00:00:00").getTime();
+    x1 = rangoHorasV24 ? rangoHorasV24.max : new Date(fecha+"T23:59:59").getTime();
   }else{
     if(!points.length)return null;
     const ts=points.map(q=>q.t.getTime());
@@ -632,9 +606,6 @@ function resetView(){
   view=baseView();
   hideTip();
   limitarMovimientoHorizontalDia();
-  const inicioV24=document.getElementById("horaInicioGraficaV24")?.value || "00:00";
-  const finV24=document.getElementById("horaFinGraficaV24")?.value || "23:59";
-  points=aplicarRangoHorasV24(points,inicioV24,finV24);
   draw(points);
 }
 
@@ -772,11 +743,7 @@ if(fechaGraficaV24){
   });
 }
 if(escalaGraficaV24){
-  escalaGraficaV24.addEventListener("change", ()=>{
-      escalaV24 = escalaGraficaV24.value;
-      view = null;
-      cargarGraficaV24();
-  });
+  escalaGraficaV24.addEventListener("change", cargarGraficaV24);
 }
 
 
@@ -838,11 +805,18 @@ function limitarMovimientoHorizontalDia(){
     }
 }
 
+
+function actualizarRangoHorasV24(){
+    view = null;
+    if(typeof cargarGraficaV24 === "function"){
+        cargarGraficaV24();
+    }
+}
+
 async function updateChart(forceReset=false){
   if(!selected){points=[];view=null;draw([]);return;}
 
-  let escalaActualV24 = document.getElementById("escalaGraficaV24")?.value || escalaV24 || scale;
-  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+encodeURIComponent(escalaActualV24);
+  let url='/api/historico/'+encodeURIComponent(selected)+'?escala='+encodeURIComponent(scale);
 
   const fechaSel=document.getElementById("fechaGraficaV24");
   const modoSel=document.getElementById("modoGraficaV24");
@@ -1006,39 +980,22 @@ function placeTip(best){
   tip.style.top=top+'px';
 }
 
-function nearestPoint(clientX,clientY=null,maxDist=8){
+function nearestPoint(clientX,clientY=null,maxDist=36){
   if(!points.length||!canvas._geom)return null;
-
   const r=canvas.getBoundingClientRect();
-  const mx=clientX-r.left;
-  const my=clientY==null?null:clientY-r.top;
-  const G=canvas._geom;
-
-  let best=null;
-  let bd=Infinity;
-
+  const mx=clientX-r.left,my=clientY==null?null:clientY-r.top,G=canvas._geom;
+  let best=null,bd=Infinity;
   points.forEach(q=>{
-    const x=G.X(q.t);
-    const y=G.Y(q.y);
-
-    // Distancia real al punto. No reducir la componente vertical,
-    // porque permitía detectar puntos alejados de la posición del cursor.
-    const d=my==null
-      ? Math.abs(x-mx)
-      : Math.hypot(x-mx,y-my);
-
-    if(d<bd){
-      bd=d;
-      best={q,x,y};
-    }
+    const x=G.X(q.t),y=G.Y(q.y);
+    const d=my==null?Math.abs(x-mx):Math.hypot(x-mx,(y-my)*0.35);
+    if(d<bd){bd=d;best={q,x,y};}
   });
-
   return best && bd<=maxDist ? best : null;
 }
 
 canvas.addEventListener('mousemove',ev=>{
   if(dragging)return;
-  const best=nearestPoint(ev.clientX,ev.clientY,8);
+  const best=nearestPoint(ev.clientX,ev.clientY,32);
   if(best)placeTip(best); else hideTip();
 });
 canvas.addEventListener('mouseleave',()=>{if(!dragging)hideTip();});
@@ -1178,7 +1135,7 @@ canvas.addEventListener('touchend',ev=>{
     if(!dragStart.moved){
       const changed=ev.changedTouches?.[0];
       if(changed){
-        const best=nearestPoint(changed.clientX,changed.clientY,8);
+        const best=nearestPoint(changed.clientX,changed.clientY,42);
         if(best)placeTip(best); else hideTip();
       }
     }
@@ -1188,7 +1145,7 @@ canvas.addEventListener('touchend',ev=>{
 
 canvas.addEventListener('click',ev=>{
   if(ev.pointerType==='touch')return;
-  const best=nearestPoint(ev.clientX,ev.clientY,8);
+  const best=nearestPoint(ev.clientX,ev.clientY,42);
   if(best)placeTip(best); else hideTip();
 });
 
@@ -1460,7 +1417,7 @@ window.addEventListener('resize',redrawSoon);
 window.addEventListener('orientationchange',()=>setTimeout(()=>draw(points),300));
 if(window.visualViewport)window.visualViewport.addEventListener('resize',redrawSoon);
 
-setInterval(()=>{if(selected){updateCurrent();updateStats();cargarGraficaV24();}else loadPets();},10000);
+setInterval(()=>{if(selected){updateCurrent();updateStats();updateChart(false);}else loadPets();},10000);
 loadPets().catch(console.error);
 })();
 
