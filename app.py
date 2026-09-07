@@ -460,14 +460,7 @@ margin:10px 0;
 <section class="panel">
 <div class="panel-head">
 <h2>Evolución de la masa de alimento disponible</h2>
-<div class="ranges">
-<button class="range" data-range="1h">1 h</button>
-<button class="range" data-range="6h">6 h</button>
-<button class="range" data-range="12h">12 h</button>
-<button class="range active" data-range="24h">24 h</button>
-<button class="range" data-range="3d">3 días</button>
-<button class="range" data-range="7d">7 días</button>
-</div>
+
 </div>
 
 <div class="chart-toolbar">
@@ -575,6 +568,16 @@ function niceCeil(v){
 
 
 // V2.4 - Rango horario manual y continuidad en extremos
+
+function actualizarIntervaloHorasV24(){
+    view=null;
+    
+horaInicioGraficaV24?.addEventListener("change", actualizarIntervaloHorasV24);
+horaFinGraficaV24?.addEventListener("change", actualizarIntervaloHorasV24);
+
+cargarGraficaV24();
+}
+
 function aplicarRangoHorasV24(puntos, horaInicio, horaFin){
     if(!puntos || puntos.length===0) return [];
 
@@ -639,6 +642,9 @@ function resetView(){
   view=baseView();
   hideTip();
   limitarMovimientoHorizontalDia();
+  const inicioV24=document.getElementById("horaInicioGraficaV24")?.value || "00:00";
+  const finV24=document.getElementById("horaFinGraficaV24")?.value || "23:59";
+  points=aplicarRangoHorasV24(points,inicioV24,finV24);
   draw(points);
 }
 
@@ -2195,4 +2201,3 @@ inicializar_plataforma()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=False)
-
